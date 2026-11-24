@@ -11,5 +11,5 @@ COPY --from=tool --chown=65532:65532 /data /data
 # The token is a file the program reads, never the token in a variable.
 ENV GREETING_TOKEN_FILE=/run/secrets/greeting
 ENTRYPOINT ["/usr/local/bin/busybox"]
-# A server stand-in that handles SIGTERM, as PID 1 has to.
-CMD ["sh", "-c", "trap 'exit 0' TERM; while true; do sleep 1; done"]
+# A server stand-in that handles SIGTERM, as PID 1 has to. Only busybox is in PATH, not its applets.
+CMD ["sh", "-c", "trap 'exit 0' TERM; while true; do busybox sleep 1; done"]

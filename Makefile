@@ -17,7 +17,7 @@ IMAGE_DOCKERFILE := test/image/Dockerfile
 IMAGE_CONTEXT := test/image
 IMAGE_SH := container/tools/image.sh
 # Writes to its volume under the deployment's restrictions and reads it back.
-IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && cat /data/probe')" = ok
+IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && busybox cat /data/probe')" = ok
 include container/image.mk
 
 .PHONY: check lint test format test-web test-rejections test-image-policy test-image agents-sync agents-check help
