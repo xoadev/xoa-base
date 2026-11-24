@@ -23,6 +23,9 @@ credentials.
        uses: xoadev/xoa-base/.github/workflows/image.yml@<sha> # vX.Y.Z
    ```
 
+The workflow runs on GitHub's runners when the calling repository is public, whose pull requests
+come from anyone, and on XOA's own when it is private; its `runs-on` input overrides that.
+
 The copies are never edited in the project: a change goes here, and the project copies the new
 commit.
 
