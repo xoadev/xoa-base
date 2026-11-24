@@ -1,0 +1,10 @@
+---
+url: /llms.txt
+---
+# {{ t.common.brand }}
+
+> {{ t.index.description }}
+
+{{ for page of search.pages("url!=/404.html url!=/llms.txt url!=/sitemap.xml") }}
+- [{{ page.t?.[page.id]?.title ?? page.url }}]({{ page.url |> url(true) }})
+{{ /for }}

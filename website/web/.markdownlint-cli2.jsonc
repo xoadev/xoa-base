@@ -1,0 +1,5 @@
+// Content in Markdown carries no HTML: what Markdown cannot say goes to front matter or the layout.
+{
+  "config": { "default": false, "MD033": true },
+  "globs": ["**/*.md", "!_site", "!node_modules"]
+}

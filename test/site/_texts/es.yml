@@ -1,0 +1,19 @@
+# The site's Spanish copy, the reference of any translation: the templates read it as `t`.
+common:
+  home: /
+  brand: Ejemplo
+  nav: Principal
+  ogAlt: "Ejemplo: una web de xoa.dev"
+  switcher: Idioma
+  skip: Saltar al contenido
+  footer: Un proyecto de <a href="https://xoa.dev">xoa.dev</a>, en A Coruña.
+index:
+  title: Ejemplo · una web de xoa.dev
+  description: La página de inicio de la web de prueba de los checks de webs de xoa.dev.
+  heading: Una web de ejemplo
+  lead: Lume, una hoja de estilos escrita a mano y nada cargado de fuera.
+notFound:
+  title: Página no encontrada
+  description: Esta página no existe.
+  heading: Esta página no existe
+  home: Volver al inicio

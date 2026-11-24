@@ -1,0 +1,57 @@
+# Every pull request and push to main: the checks run over the test site and image through the same reusable
+# workflows a project calls. A public repository: GitHub's runners only, never a self-hosted one a fork's pull request
+# could run on.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # The squash merge makes the PR's title the commit's subject on main.
+  title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: The title is a Conventional Commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|perf|test|build|ci|chore|style|revert)(\([a-z0-9/-]+\))?!?: [^ ]'
+          [[ "$TITLE" =~ $pattern ]] || { echo "::error title=PR title::'$TITLE' is not a Conventional Commit" >&2; exit 1; }
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+
+      - run: make lint test-image-policy agents-check
+
+  web:
+    uses: ./.github/workflows/web.yml
+    with:
+      directory: website/web
+      target: test-web
+
+  image:
+    uses: ./.github/workflows/image.yml
+    with:
+      target: test-image

@@ -1,0 +1,116 @@
+/* The site's only stylesheet, by hand: semantic HTML styled by element, a class only where an element is not enough. */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/assets/inter-latin-wght-normal.woff2") format("woff2");
+}
+
+/* Every color is a variable here, redefined for dark mode below: a new one follows the pattern, with its contrast. */
+:root {
+  --bg: #fff;
+  --ink: #0a0a0a;
+  --muted: #525252;
+  --line: #e5e5e5;
+  --accent: #15803d;
+
+  color-scheme: light dark;
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.55;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0a;
+    --ink: #f5f5f5;
+    --muted: #a3a3a3;
+    --line: #262626;
+    --accent: #4ade80;
+  }
+}
+
+body {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+a {
+  color: var(--accent);
+}
+
+/* One focus ring for the whole site; never removed, never replaced by a color change alone. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+header,
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.languages {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.languages [aria-current] {
+  color: var(--ink);
+}
+
+.lead {
+  max-width: 42rem;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+/* Hidden until the keyboard reaches it, first thing on the page. */
+.skip {
+  position: absolute;
+  left: -100vw;
+}
+
+.skip:focus {
+  left: 1rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (width <= 760px) {
+  body {
+    padding: 0 1rem;
+  }
+}

@@ -1,0 +1,53 @@
+# The website's checks, called from a project's workflow by SHA:
+#
+#   jobs:
+#     web:
+#       uses: xoadev/xoa-base/.github/workflows/web.yml@<sha> # vX.Y.Z
+#
+# It runs the project's own `make web-check`, with web.mk and the checks copied from this repository. Deploying the
+# site is the project's workflow, which takes the pages from `make web` (web/_site).
+name: web
+
+on:
+  workflow_call:
+    inputs:
+      directory:
+        description: The site's folder, WEB in the Makefile
+        type: string
+        default: web
+      target:
+        description: The make target that checks it
+        type: string
+        default: web-check
+      runs-on:
+        description: The runner, as JSON (a label, or a list of labels)
+        type: string
+        default: '"ubuntu-latest"'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ${{ fromJSON(inputs.runs-on) }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+
+      # The Chromium of the pinned Playwright. Its system libraries are the runner's: GitHub's have them, and a
+      # self-hosted one brings them in its image.
+      - name: Browser
+        working-directory: ${{ inputs.directory }}
+        run: deno run -A npm:playwright@1.64.1 install chromium-headless-shell
+
+      - name: Check
+        env:
+          TARGET: ${{ inputs.target }}
+          WEB: ${{ inputs.directory }}
+        run: make "$TARGET" WEB="$WEB"

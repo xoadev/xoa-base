@@ -1,0 +1,50 @@
+# The container image's checks for both architectures, called from a project's workflow by SHA:
+#
+#   jobs:
+#     image:
+#       uses: xoadev/xoa-base/.github/workflows/image.yml@<sha> # vX.Y.Z
+#
+# It runs the project's own `make image-lint image-check`, with image.mk and tools/image.sh copied from this
+# repository. Publishing the image is the project's release workflow, which takes the archive of `make image-oci`.
+name: image
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: The make targets that check it
+        type: string
+        default: image-lint image-check
+      platforms:
+        type: string
+        default: linux/amd64,linux/arm64
+      runs-on:
+        description: The runner, as JSON (a label, or a list of labels); it needs Docker
+        type: string
+        default: '"ubuntu-latest"'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ${{ fromJSON(inputs.runs-on) }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # arm64 is emulated only to start the image and check it; it is never compiled under emulation.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Check
+        env:
+          TARGET: ${{ inputs.target }}
+          PLATFORMS: ${{ inputs.platforms }}
+        # TARGET is a list of targets, split on purpose.
+        run: make $TARGET PLATFORMS="$PLATFORMS"

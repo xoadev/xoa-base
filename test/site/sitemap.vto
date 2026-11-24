@@ -1,0 +1,14 @@
+---
+url: /sitemap.xml
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{{ for page of search.pages("url!=/sitemap.xml url!=/404.html url!=/robots.txt url!=/llms.txt") }}
+  <url>
+    <loc>{{ page.url |> url(true) }}</loc>
+    {{ for other of page.alternates ?? [] }}
+    <xhtml:link rel="alternate" hreflang="{{ other.lang }}" href="{{ other.url |> url(true) }}"/>
+    {{ /for }}
+  </url>
+{{ /for }}
+</urlset>
