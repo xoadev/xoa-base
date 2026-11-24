@@ -42,7 +42,8 @@ endif
 .PHONY: image-lint image-check image-oci
 
 image-lint: $(IMAGE_BIN)/hadolint ## hadolint, and the policy: frontend and bases by digest, distroless, non-root, no secret in ENV or ARG, downloads checked
-	@$(IMAGE_BIN)/hadolint $(IMAGE_DOCKERFILE)
+	@# DL3064 (secrets in ENV or ARG) is image.sh's rule instead: it also flags NAME_FILE, the path a secret is read from.
+	@$(IMAGE_BIN)/hadolint --ignore DL3064 $(IMAGE_DOCKERFILE)
 	@$(IMAGE_SH) lint $(IMAGE_DOCKERFILE)
 
 image-check: $(IMAGE_DEPS) ## BuildKit's checks; IMAGE for each of PLATFORMS: architecture, user, environment, IMAGE_CHECK restricted, clean stop
