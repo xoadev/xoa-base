@@ -43,7 +43,7 @@ jobs:
         with:
           deno-version: v2.9.7
 
-      - run: make lint test-image-policy agents-check
+      - run: make lint test-image-policy test-fetch agents-check
 
   web:
     uses: ./.github/workflows/web.yml
