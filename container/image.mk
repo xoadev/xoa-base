@@ -24,7 +24,8 @@ IMAGE_CHECK ?=
 IMAGE_BUILD_ARGS ?=
 IMAGE_STOP ?= 1
 IMAGE_MEMORY ?= 512m
-IMAGE_SH ?= tools/image.sh
+# image.sh is next to this file, wherever the project has it: fetched into .xoa-base/ or copied.
+IMAGE_SH := $(dir $(lastword $(MAKEFILE_LIST)))tools/image.sh
 PLATFORMS ?= linux/$(subst aarch64,arm64,$(subst x86_64,amd64,$(shell uname -m)))
 export IMAGE IMAGE_DOCKERFILE IMAGE_CONTEXT IMAGE_CHECK IMAGE_BUILD_ARGS IMAGE_STOP IMAGE_MEMORY PLATFORMS
 

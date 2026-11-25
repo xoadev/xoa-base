@@ -15,12 +15,11 @@ include website/web.mk
 IMAGE := xoa-base-test:local
 IMAGE_DOCKERFILE := test/image/Dockerfile
 IMAGE_CONTEXT := test/image
-IMAGE_SH := container/tools/image.sh
 # Writes to its volume under the deployment's restrictions and reads it back.
 IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && busybox cat /data/probe')" = ok
 include container/image.mk
 
-.PHONY: check lint test format test-web test-rejections test-image-policy test-image agents-sync agents-check help
+.PHONY: check lint test format test-fetch test-web test-rejections test-image-policy test-image agents-sync agents-check help
 
 check: lint test agents-check ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
@@ -72,3 +71,14 @@ agents-sync agents-check:
 
 help:
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-17s %s\n", $$1, $$2}'
+
+# The snippet is the README's, as a project copies it, so what is documented is what is tested.
+XOA_BASE_TEST ?= $(shell git rev-parse HEAD)
+test-fetch: ## A scratch project fetches container/ with the README's snippet, at XOA_BASE_TEST, and runs its policy
+	@rm -rf build/fetch && mkdir -p build/fetch && cp test/image/Dockerfile build/fetch/
+	@printf 'IMAGE_DOCKERFILE := Dockerfile\n' > build/fetch/Makefile
+	@awk '/<!-- fetch -->/ { on = 1; next } on && /^```make/ { inside = 1; next } inside && /^```/ { exit } inside' README.md \
+	  | sed 's/<sha>/$(XOA_BASE_TEST)/' >> build/fetch/Makefile
+	@printf 'policy:\n\t@$$(IMAGE_SH) lint $$(IMAGE_DOCKERFILE)\n' >> build/fetch/Makefile
+	@$(MAKE) --no-print-directory -C build/fetch policy
+	@test -f build/fetch/.xoa-base/$(XOA_BASE_TEST)/.fetched && echo "fetch: OK"
