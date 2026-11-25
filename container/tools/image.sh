@@ -164,8 +164,8 @@ check() {
     fail "set IMAGE_CHECK in the Makefile: a command that does inside \$IMAGE what a real request does, not only --version"
   # shellcheck disable=SC2086 # IMAGE_BUILD_ARGS is a list of flags
   docker buildx build --check --file "$IMAGE_DOCKERFILE" ${IMAGE_BUILD_ARGS:-} "$IMAGE_CONTEXT"
-  IFS=, read -ra platforms <<< "$PLATFORMS"
-  for platform in "${platforms[@]}"; do
+  IFS=, read -ra each_platform <<< "$PLATFORMS"
+  for platform in "${each_platform[@]}"; do
     arch=${platform#linux/}
     tag="$IMAGE-$arch"
     # Docker loads one platform per tag, so each is built, loaded and checked on its own.
