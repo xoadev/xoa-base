@@ -49,5 +49,7 @@ jobs:
         env:
           TARGET: ${{ inputs.target }}
           PLATFORMS: ${{ inputs.platforms }}
-        # TARGET is a list of targets, split on purpose.
-        run: make $TARGET PLATFORMS="$PLATFORMS"
+        # TARGET is a list of targets.
+        run: |
+          read -ra targets <<< "$TARGET"
+          make "${targets[@]}" PLATFORMS="$PLATFORMS"
