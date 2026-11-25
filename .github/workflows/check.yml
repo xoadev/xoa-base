@@ -32,6 +32,8 @@ jobs:
           [[ "$TITLE" =~ $pattern ]] || { echo "::error title=PR title::'$TITLE' is not a Conventional Commit" >&2; exit 1; }
 
   lint:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -46,12 +48,16 @@ jobs:
       - run: make lint test-image-policy test-fetch agents-check
 
   web:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
     uses: ./.github/workflows/web.yml
     with:
       directory: website/web
       target: test-web
 
   image:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
     uses: ./.github/workflows/image.yml
     with:
       target: test-image

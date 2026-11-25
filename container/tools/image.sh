@@ -21,8 +21,9 @@ RUN_FLAGS=(--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privile
 START_SECONDS=3
 STOP_SECONDS=10
 
-# A variable named like a secret. Secrets reach the container as files, so the variable that names one ends in _FILE.
-SECRET_NAME='(SECRET|TOKEN|PASSWORD|PASSWD|CREDENTIAL|PRIVATE_KEY|API_KEY|_KEY$)'
+# A variable named like a secret, by whole words of its name: TOKEN and API_KEY are, TOKENIZERS_PARALLELISM and a base
+# image's GPG_KEY are not. Secrets reach the container as files, so the variable that names one ends in _FILE.
+SECRET_NAME='(^|_)(SECRETS?|TOKEN|PASSWORD|PASSWD|CREDENTIALS?|(API|PRIVATE|SECRET|ACCESS)_KEY)(_|$)'
 
 fail() {
   echo "image: $*" >&2
@@ -41,6 +42,10 @@ lint() {
     awk -v file="$dockerfile" -v secret="$SECRET_NAME" -f - "$dockerfile" <<'AWK' || errors=1
 function complain(message) { printf "%s:%d: %s\n", file, line, message > "/dev/stderr"; failed = 1 }
 function secret_name(name) { return name !~ /_FILE$/ && toupper(name) ~ secret }
+function remember_stage() {
+  if (current == "") return
+  stage_base[current] = base; stage_user[current] = user; stage_exempt[current] = exempt
+}
 
 # The frontend is code BuildKit downloads and runs: pinned like a base. A parser directive is only one on the first lines.
 NR == 1 && $0 !~ /^#[ \t]*syntax=[^ \t]+@sha256:[0-9a-f]{64}[ \t]*$/ {
@@ -69,12 +74,20 @@ NR == 1 && $0 !~ /^#[ \t]*syntax=[^ \t]+@sha256:[0-9a-f]{64}[ \t]*$/ {
     for (i = 1; i <= n; i++) {
       if (args[i] ~ /^--/) continue
       if (image == "") image = args[i]
-      else if (toupper(args[i]) == "AS") stage = args[i + 1]
+      else if (toupper(args[i]) == "AS") stage = tolower(args[i + 1])
     }
-    if (image != "scratch" && !(image in stages) && image !~ /@sha256:[0-9a-f]{64}$/)
-      complain("FROM " image ": pin the base by digest (" image "@sha256:...), and let Dependabot move it")
-    if (stage != "") stages[stage] = 1
-    final = image; final_line = line; final_comments = comments; user = ""
+    remember_stage()
+    # A stage built FROM an earlier one (stage names are case-insensitive) inherits its base, its user and its reason.
+    if (tolower(image) in stage_base) {
+      parent = tolower(image)
+      base = stage_base[parent]; user = stage_user[parent]; exempt = stage_exempt[parent]
+    } else {
+      if (image != "scratch" && image !~ /@sha256:[0-9a-f]{64}$/)
+        complain("FROM " image ": pin the base by digest (" image "@sha256:...), and let Dependabot move it")
+      base = image; user = ""; exempt = 0
+    }
+    if (comments ~ /#[ \t]*not distroless:/) exempt = 1
+    current = stage; final_line = line
   } else if (keyword == "ADD") {
     if (instruction ~ /(^|[ \t])https?:\/\// && instruction !~ /--checksum=sha256:[0-9a-f]{64}/)
       complain("ADD of a URL without --checksum=sha256:...: what is downloaded is checked, or the build takes whatever the server gives")
@@ -95,11 +108,11 @@ NR == 1 && $0 !~ /^#[ \t]*syntax=[^ \t]+@sha256:[0-9a-f]{64}[ \t]*$/ {
 }
 
 END {
-  if (final == "") { complain("no FROM"); exit 1 }
+  if (base == "") { complain("no FROM"); exit 1 }
   line = final_line
-  if (final !~ /^gcr\.io\/distroless\// && final != "scratch" && final_comments !~ /#[ \t]*not distroless:/)
-    complain("FROM " final ": the image runs on gcr.io/distroless (or scratch); if it cannot, a comment right above this FROM says why: # not distroless: <reason>")
-  root = (user == "" ? final !~ /:nonroot([@-]|$)/ : user ~ /^(root|0)(:|$)/)
+  if (base !~ /^gcr\.io\/distroless\// && base != "scratch" && !exempt)
+    complain("FROM " base ": the image runs on gcr.io/distroless (or scratch); if it cannot, a comment right above this FROM says why: # not distroless: <reason>")
+  root = (user == "" ? base !~ /:nonroot([@-]|$)/ : user ~ /^(root|0)(:|$)/)
   if (root)
     complain("the image runs as root: USER 65532:65532 (distroless's nonroot) or a :nonroot base")
   exit failed

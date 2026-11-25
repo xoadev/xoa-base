@@ -54,7 +54,7 @@ come from anyone. The `runs-on` input overrides all of this.
   monolingual and bilingual, with the cases that must fail, the image policy over `test/image` and
   the Dockerfiles in `test/image/rejected`, and the shared head of `AGENTS.md`.
 - `make test-fetch`: a scratch project fetches `container/` with the snippet above, at this commit
-  (`XOA_BASE=<sha>` for another), and its policy runs. It needs the commit on GitHub.
+  (`XOA_BASE_TEST=<sha>` for another), and its policy runs. It needs the commit on GitHub.
 - `make test-image`: the image's lint and check over the test image, for amd64 and arm64. It needs
   Docker with buildx and QEMU.
 - `make web-serve`: the test site at <http://localhost:3000> (after `make test`).

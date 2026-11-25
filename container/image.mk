@@ -32,6 +32,8 @@ export IMAGE IMAGE_DOCKERFILE IMAGE_CONTEXT IMAGE_CHECK IMAGE_BUILD_ARGS IMAGE_S
 # hadolint, fetched into IMAGE_BIN and checked against its sha256: the same version here and in CI.
 IMAGE_BIN ?= .tmp/bin
 HADOLINT_VERSION := 2.15.1
+# The version is in the binary's name, so a new one is fetched and checked rather than an old one reused.
+HADOLINT = $(IMAGE_BIN)/hadolint-$(HADOLINT_VERSION)
 HADOLINT_ARCH := $(shell uname -m)
 ifeq ($(HADOLINT_ARCH),x86_64)
 HADOLINT_SHA256 := c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
@@ -42,9 +44,9 @@ endif
 
 .PHONY: image-lint image-check image-oci
 
-image-lint: $(IMAGE_BIN)/hadolint ## hadolint, and the policy: frontend and bases by digest, distroless, non-root, no secret in ENV or ARG, downloads checked
+image-lint: $(HADOLINT) ## hadolint, and the policy: frontend and bases by digest, distroless, non-root, no secret in ENV or ARG, downloads checked
 	@# DL3064 (secrets in ENV or ARG) is image.sh's rule instead: it also flags NAME_FILE, the path a secret is read from.
-	@$(IMAGE_BIN)/hadolint --ignore DL3064 $(IMAGE_DOCKERFILE)
+	@$(HADOLINT) --ignore DL3064 $(IMAGE_DOCKERFILE)
 	@$(IMAGE_SH) lint $(IMAGE_DOCKERFILE)
 
 image-check: $(IMAGE_DEPS) ## BuildKit's checks; IMAGE for each of PLATFORMS: architecture, user, environment, IMAGE_CHECK restricted, clean stop
@@ -53,7 +55,7 @@ image-check: $(IMAGE_DEPS) ## BuildKit's checks; IMAGE for each of PLATFORMS: ar
 image-oci: $(IMAGE_DEPS) ## Every platform of PLATFORMS in one OCI archive, OCI=<file>, for the publishing job to push
 	@$(IMAGE_SH) oci "$(OCI)"
 
-$(IMAGE_BIN)/hadolint:
+$(HADOLINT):
 	@test -n "$(HADOLINT_SHA256)" || { echo "image: no pinned hadolint for $(HADOLINT_ARCH): add its sha256 to image.mk" >&2; exit 1; }
 	@mkdir -p $(IMAGE_BIN)
 	@curl -fsSL --proto '=https' --retry 3 -o $@.download \

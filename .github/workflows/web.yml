@@ -43,11 +43,12 @@ jobs:
         with:
           deno-version: v2.9.7
 
-      # The Chromium of the pinned Playwright. Its system libraries are the runner's: GitHub's have them, and a
-      # self-hosted one brings them in its image.
+      # The Chromium of the Playwright the site's deno.json pins, through the project's own target. Its system
+      # libraries are the runner's: GitHub's have them, and a self-hosted one brings them in its image.
       - name: Browser
-        working-directory: ${{ inputs.directory }}
-        run: deno run -A npm:playwright@1.64.1 install chromium-headless-shell
+        env:
+          WEB: ${{ inputs.directory }}
+        run: make web-browser WEB="$WEB"
 
       - name: Check
         env:
