@@ -3,17 +3,17 @@
 The checks and workflows shared by XOA Desarrollo's projects, for anyone to use: they need no
 credentials.
 
-| Folder       | What it checks                                                                                  |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `website/`   | A static Lume site: lints, content by language, SEO, accessibility at two widths and two themes |
-| `container/` | A container image: digests, distroless, non-root, secrets, both architectures, a clean stop     |
+| Folder       | For                                                                       |
+| ------------ | ------------------------------------------------------------------------- |
+| `website/`   | A static Lume site; what it checks, in `website/web.mk`                   |
+| `container/` | A container image; what it checks, in `container/image.mk` and `image.sh` |
 
 ## Using it in a project
 
 A project names one commit of this repository and never edits what it takes from it: a change goes
 here, and the project moves to the new commit.
 
-There are no releases yet: the commit is one of `main`.
+Until there are releases, the commit is one of `main`.
 
 **`container/`** is fetched by `make` into `.xoa-base/`, which the project's `.gitignore` lists. The
 project's `Makefile` sets the variables `image.mk` lists, wires its targets into its own, and then
@@ -76,12 +76,6 @@ come from anyone. The `runs-on` input overrides all of this.
 
 ## Development
 
-- `make check`: the Markdown's layout, the website's checks over the test site in `test/site`,
-  monolingual and bilingual, with the cases that must fail, the image policy over `test/image` and
-  the Dockerfiles in `test/image/rejected`.
-- `make test-fetch`: a scratch project fetches `container/` with the snippet above, at this commit
-  (`XOA_BASE_TEST=<sha>` for another), and its policy runs. It needs the commit on GitHub.
-- `make test-image`: the image's lint and check over the test image, for amd64 and arm64. It needs
-  Docker with buildx and QEMU.
-- `make web-serve`: the test site at <http://localhost:3000> (after `make test`).
-- `make web-browser`: the Chromium of the accessibility check, once per machine.
+`make help` lists the targets and what each checks; `make check` is what CI runs. Beyond Deno,
+`make test-image` needs Docker with buildx and QEMU, and `make test-fetch` needs this commit on
+GitHub (`XOA_BASE_TEST=<sha>` for another).
