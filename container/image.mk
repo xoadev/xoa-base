@@ -24,30 +24,21 @@ IMAGE_CHECK ?=
 IMAGE_BUILD_ARGS ?=
 IMAGE_STOP ?= 1
 IMAGE_MEMORY ?= 512m
-# image.sh is next to this file, and the tools it fetches go beside it, inside the folder the project ignores.
+# image.sh is next to this file, fetched or copied.
 IMAGE_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
 IMAGE_SH := $(IMAGE_HOME)tools/image.sh
 PLATFORMS ?= linux/$(subst aarch64,arm64,$(subst x86_64,amd64,$(shell uname -m)))
 export IMAGE IMAGE_DOCKERFILE IMAGE_CONTEXT IMAGE_CHECK IMAGE_BUILD_ARGS IMAGE_STOP IMAGE_MEMORY PLATFORMS
 
-# hadolint, checked against its sha256, with its version in its name so a new one is fetched rather than an old one
-# reused: the same here and in CI.
-include $(IMAGE_HOME)../lint/fetch.mk
-HADOLINT_VERSION := 2.15.1
-HADOLINT := $(XOA_TOOLS)/hadolint-$(HADOLINT_VERSION)
-ifeq ($(XOA_ARCH),x86_64)
-HADOLINT_ARCH := x86_64
-HADOLINT_SHA256 := c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
-else ifeq ($(XOA_ARCH),aarch64)
-HADOLINT_ARCH := arm64
-HADOLINT_SHA256 := f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d
-endif
+# hadolint comes with the machine (lint/require.mk).
+include $(IMAGE_HOME)../lint/require.mk
 
 .PHONY: image-lint image-check image-oci
 
-image-lint: $(HADOLINT) ## hadolint, and the policy: frontend and bases by digest, distroless, non-root, no secret in ENV or ARG, downloads checked
+image-lint: ## hadolint, and the policy: frontend and bases by digest, distroless, non-root, no secret in ENV or ARG, downloads checked
+	$(call xoa-require,hadolint,2.12.0,https://github.com/hadolint/hadolint#install)
 	@# DL3064 (secrets in ENV or ARG) is image.sh's rule instead: it also flags NAME_FILE, the path a secret is read from.
-	@$(HADOLINT) --ignore DL3064 $(IMAGE_DOCKERFILE)
+	@hadolint --ignore DL3064 $(IMAGE_DOCKERFILE)
 	@$(IMAGE_SH) lint $(IMAGE_DOCKERFILE)
 
 image-check: $(IMAGE_DEPS) ## BuildKit's checks; IMAGE for each of PLATFORMS: architecture, user, environment, IMAGE_CHECK restricted, clean stop
@@ -55,7 +46,3 @@ image-check: $(IMAGE_DEPS) ## BuildKit's checks; IMAGE for each of PLATFORMS: ar
 
 image-oci: $(IMAGE_DEPS) ## Every platform of PLATFORMS in one OCI archive, OCI=<file>, for the publishing job to push
 	@$(IMAGE_SH) oci "$(OCI)"
-
-$(HADOLINT):
-	$(call xoa-fetch,https://github.com/hadolint/hadolint/releases/download/v$(HADOLINT_VERSION)/hadolint-linux-$(HADOLINT_ARCH),$(HADOLINT_SHA256))
-	@chmod 0755 $@.download && mv $@.download $@

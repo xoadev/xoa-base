@@ -48,8 +48,9 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 
 **`lint/`** is fetched the same way: a project includes the linters it needs next to its area's
 (`include .xoa-base/$(XOA_BASE)/lint/markdown.mk`, and so on) and puts their targets in its `lint`.
-Each says in its first lines what it checks and how; the tools they download land inside
-`.xoa-base/`.
+Each says in its first lines what it checks and how. The tools come with the machine, never with
+`make`: XOA's runner and agent images bring them, anywhere else they are installed by hand, and a
+`.mk` fails saying which one is missing or too old.
 
 **`website/`** is a Lume plugin the site imports by the same commit, with nothing fetched by `make`:
 how, and the format of the site's prose it reads, in [`website/README.md`](website/README.md).

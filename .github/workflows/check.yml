@@ -35,6 +35,12 @@ jobs:
         with:
           deno-version: v2.9.7
 
+      # GitHub's runner brings shellcheck but not actionlint, which XOA's own runners have.
+      - name: actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
       - run: make lint test-image-policy test-fetch
 
   web:

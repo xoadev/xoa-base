@@ -46,6 +46,15 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      # XOA's runners bring hadolint; GitHub's do not, so it comes out of its official image, by digest.
+      - name: hadolint
+        run: |
+          if ! command -v hadolint > /dev/null; then
+            container=$(docker create hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d) # v2.15.1
+            mkdir -p "$RUNNER_TEMP/bin" && docker cp "$container:/bin/hadolint" "$RUNNER_TEMP/bin/hadolint" && docker rm "$container"
+            echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          fi
+
       - name: Check
         env:
           TARGET: ${{ inputs.target }}
