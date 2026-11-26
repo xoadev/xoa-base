@@ -9,7 +9,8 @@
   },
   "fmt": {
     "lineWidth": 120,
-    "exclude": ["node_modules/"]
+    // The repository's Markdown is prettier's (make lint), which wraps it otherwise.
+    "exclude": ["node_modules/", "*.md"]
   },
   "lint": {
     "exclude": ["node_modules/"],

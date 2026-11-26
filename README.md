@@ -41,31 +41,8 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 	@git -C $(@D) checkout -q FETCH_HEAD && touch $@
 ```
 
-**`website/`** is a Lume plugin and a script that the site imports as Deno modules, by the same
-commit, with nothing fetched by `make`. The site's `deno.json` maps them, and its `deno.lock` holds
-their hashes, all of them after one build, since the plugin imports every module:
-
-```json
-{
-  "imports": { "xoa-web/": "https://raw.githubusercontent.com/xoadev/xoa-base/<sha>/website/" },
-  "tasks": {
-    "a11y": "echo \"import { a11y } from 'xoa-web/mod.ts'; await a11y()\" | deno run -A -",
-    "browser": "echo \"import { installBrowser } from 'xoa-web/mod.ts'; await installBrowser()\" | deno run -A -"
-  }
-}
-```
-
-- Its `_config.ts` runs `site.use(xoa())`, imported from `xoa-web/mod.ts`. Every build then checks
-  what it made (what, in `website/mod.ts`) and fails on any failure; while serving, it prints them.
-  The plugin also gives the pages the `json` filter for their JSON-LD.
-- Its `_data.ts` reads the prose with `loadContent({ root, languages, defaultLanguage })` from
-  `xoa-web/mod.ts`.
-- `deno task a11y` checks the built site in a browser, which `deno task browser` installs once.
-- The modules share the site's `lume/`, so the site's Lume is theirs too.
-
-The project's `Makefile` runs them through the two targets the CI's workflow calls: `web-check`
-(`cd <site> && deno fmt --check && deno lint && deno task build && deno task a11y`) and
-`web-browser` (`cd <site> && deno task browser`).
+**`website/`** is a Lume plugin the site imports by the same commit, with nothing fetched by `make`:
+how, and the format of the site's prose it reads, in [`website/README.md`](website/README.md).
 
 **The CI** calls the reusable workflow by the same commit, in `.github/workflows/image.yml`:
 

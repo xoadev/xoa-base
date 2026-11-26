@@ -1,5 +1,5 @@
 // From github.com/xoadev/xoa-base (website/content.ts): change it there.
-// The site's prose, read as the website skill writes it ("Languages"): `_content/<lang>/<page>.md`, one file per page
+// The site's prose, in the format of website/README.md ("The site's prose"): `_content/<lang>/<page>.md`, one file per page
 // and language, and `_content/<lang>/<collection>/<id>.md`, one file per item of a collection. `_data.ts` calls
 // `loadContent()` and hands each language's tree to the pages as `c`.
 import { extract } from "lume/deps/front_matter.ts";
