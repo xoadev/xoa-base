@@ -74,6 +74,8 @@ test-image-policy: ## The image policy passes the test image and test/image/acce
 # The same image with a server that ignores SIGTERM must be refused, and for that reason.
 test-image: ## The image's lint and check over the test image, for both architectures. Needs Docker
 	@$(MAKE) --no-print-directory image-lint image-check PLATFORMS=linux/amd64,linux/arm64
+	@$(MAKE) --no-print-directory image-oci OCI=build/image.tar PLATFORMS=linux/amd64,linux/arm64
+	@tar -xOf build/image.tar index.json | grep -q '"mediaType"' || { echo "image oci: no OCI index in the archive" >&2; exit 1; }
 	@if out=$$($(MAKE) --no-print-directory image-check IMAGE_DOCKERFILE=test/image/ignores-sigterm.Dockerfile 2>&1); then \
 	  echo "$$out"; echo "image check: a server that ignores SIGTERM should fail" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'it ignores SIGTERM'; then echo "$$out"; echo "image check: failed for another reason" >&2; exit 1; fi

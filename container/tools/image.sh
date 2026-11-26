@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copied from github.com/xoadev/xoa-base (container/tools/image.sh): change it there, not in a project's copy.
+# From github.com/xoadev/xoa-base (container/tools/image.sh), fetched by the project's Makefile: change it there.
 # The container image's policy, check and build, run by image.mk.
 #
 #   image.sh lint <Dockerfile>...   what hadolint does not know: the frontend and bases by digest, distroless,

@@ -1,5 +1,5 @@
-# Copied from github.com/xoadev/xoa-base (container/image.mk): change it there, not in a project's copy.
-# The container image's targets, included from the project's Makefile (`include image.mk`). CI runs
+# From github.com/xoadev/xoa-base (container/image.mk), which a project's Makefile fetches by commit into
+# .xoa-base/<commit>/ and includes: change it there. CI runs
 # `make image-lint image-check`; the release's build job `make image-oci`, and its publishing job pushes that archive.
 #
 # What the project sets before the include:
@@ -24,13 +24,14 @@ IMAGE_CHECK ?=
 IMAGE_BUILD_ARGS ?=
 IMAGE_STOP ?= 1
 IMAGE_MEMORY ?= 512m
-# image.sh is next to this file, wherever the project has it: fetched into .xoa-base/ or copied.
-IMAGE_SH := $(dir $(lastword $(MAKEFILE_LIST)))tools/image.sh
+# image.sh is next to this file, and the tools it fetches go beside it, inside the folder the project ignores.
+IMAGE_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
+IMAGE_SH := $(IMAGE_HOME)tools/image.sh
 PLATFORMS ?= linux/$(subst aarch64,arm64,$(subst x86_64,amd64,$(shell uname -m)))
 export IMAGE IMAGE_DOCKERFILE IMAGE_CONTEXT IMAGE_CHECK IMAGE_BUILD_ARGS IMAGE_STOP IMAGE_MEMORY PLATFORMS
 
 # hadolint, fetched into IMAGE_BIN and checked against its sha256: the same version here and in CI.
-IMAGE_BIN ?= .tmp/bin
+IMAGE_BIN ?= $(IMAGE_HOME)../.tmp/bin
 HADOLINT_VERSION := 2.15.1
 # The version is in the binary's name, so a new one is fetched and checked rather than an old one reused.
 HADOLINT = $(IMAGE_BIN)/hadolint-$(HADOLINT_VERSION)

@@ -4,8 +4,9 @@
 #     image:
 #       uses: xoadev/xoa-base/.github/workflows/image.yml@<sha> # vX.Y.Z
 #
-# It runs the project's own `make image-lint image-check`, with image.mk and tools/image.sh copied from this
-# repository. Publishing the image is the project's release workflow, which takes the archive of `make image-oci`.
+# It runs the project's own `make image-lint image-check`, whose Makefile fetches container/ from this repository at
+# its XOA_BASE, which is to be the same commit. Publishing the image is the project's release workflow, which takes
+# the archive of `make image-oci`.
 name: image
 
 on:

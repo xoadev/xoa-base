@@ -13,8 +13,19 @@ credentials.
 A project names one commit of this repository and never edits what it takes from it: a change goes
 here, and the project moves to the new commit.
 
-**`container/`** is fetched by `make` into `.xoa-base/`, which the project's `.gitignore` lists. In
-the project's `Makefile`, with the `IMAGE_*` variables `image.mk` lists set above it:
+There are no releases yet: the commit is one of `main`.
+
+**`container/`** is fetched by `make` into `.xoa-base/`, which the project's `.gitignore` lists. The
+project's `Makefile` sets the variables `image.mk` lists, wires its targets into its own, and then
+fetches and includes it:
+
+```make
+IMAGE := myapp:local
+# What a real request does, inside the image, under a deployment's restrictions ($$IMAGE_RUN).
+IMAGE_CHECK = $$IMAGE_RUN "$$IMAGE" check /data
+lint: image-lint
+test: image-check
+```
 
 <!-- fetch -->
 
@@ -34,13 +45,28 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 site's folder, recording the commit. Its checks run inside the site's own Deno configuration, which
 the project extends.
 
-**The CI** calls the reusable workflow by the same commit:
+**The CI** calls the reusable workflow by the same commit, in `.github/workflows/image.yml`:
 
 ```yaml
+name: image
+on:
+  pull_request:
+    paths: [Dockerfile, Makefile, src/**, .github/workflows/image.yml]
+  push:
+    branches: [main]
+permissions:
+  contents: read
 jobs:
   image:
-    uses: xoadev/xoa-base/.github/workflows/image.yml@<sha> # vX.Y.Z
+    uses: xoadev/xoa-base/.github/workflows/image.yml@<sha>
 ```
+
+Moving to another commit is one pull request that changes `XOA_BASE` and the workflow's SHA
+together; nothing checks that they match.
+
+An image compiled in stages that cannot cross-compile builds each architecture on its own runner
+rather than under emulation: two jobs, one with `platforms: linux/arm64` and
+`runs-on: '"ubuntu-24.04-arm"'`.
 
 The workflow runs on GitHub's runners unless the calling repository is private and its organization
 (or the repository) sets the Actions variable `SELF_HOSTED_RUNNER` to its own runners' labels as
