@@ -1,0 +1,6 @@
+// The version of prettier that markdown.mk and yaml.mk run, where Dependabot's deno ecosystem moves it.
+{
+  "imports": {
+    "prettier": "npm:prettier@3.9.6"
+  }
+}

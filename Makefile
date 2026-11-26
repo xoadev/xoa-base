@@ -38,8 +38,8 @@ test: test-content test-web test-image-policy ## The website's checks over the t
 web-browser: ## The headless Chromium the accessibility check drives (once per machine), as a project's target
 	@cd test/site && deno task browser
 
-test-content: ## The tests of content.ts: pages cut into sections and items, data by id, collections, languages by id
-	@cd $(CHECKS_WEB) && deno test --allow-read --allow-write content_test.ts
+test-content: ## The tests of content.ts (pages, sections, items, collections, languages) and of the modules' pinned versions
+	@cd $(CHECKS_WEB) && deno test --allow-read --allow-write content_test.ts deps_test.ts
 
 test-web: ## The website's checks over the test site, monolingual and bilingual, and what must fail
 	@rm -rf build && mkdir build && cp -r test/site build/site

@@ -21,6 +21,10 @@ the plugin imports every module:
   `xoa-web/mod.ts`.
 - `deno task a11y` checks the built site in a browser, which `deno task browser` installs once.
 - The modules share the site's `lume/`, so the site's Lume is theirs too.
+- Dependabot moves the site's own JSR and npm dependencies with its `deno` ecosystem over the site's
+  folder, and the commit of `xoa-web/` with `github-actions`, through the workflows (the plugin
+  fails a build whose `deno.json` is left behind). Lume comes from `deno.land/x`, which Dependabot
+  does not read: it is moved by hand.
 
 The project's `Makefile` runs them through the two targets the CI's workflow calls: `web-check`
 (`cd <site> && deno fmt --check && deno lint && deno task build && deno task a11y`) and

@@ -1,8 +1,9 @@
 # From github.com/xoadev/xoa-base (lint/yaml.mk): change it here. `make yaml-lint` checks the repository's YAML,
-# YAML_FILES (default: all of it but what .gitignore leaves out), with prettier, whose version is pinned here and runs
-# through Deno; `make yaml-format` applies it.
-PRETTIER := deno run --quiet --allow-read --allow-env --allow-sys npm:prettier@3.9.6
-PRETTIER_WRITE := deno run --quiet --allow-read --allow-write --allow-env --allow-sys npm:prettier@3.9.6
+# YAML_FILES (default: all of it but what .gitignore leaves out), with prettier, which runs through Deno; `make yaml-format` applies it.
+# Prettier's version is lint/deno.jsonc's, which Dependabot moves.
+PRETTIER_PACKAGE := $(shell sed -n 's/.*"\(npm:prettier@[^"]*\)".*/\1/p' $(dir $(lastword $(MAKEFILE_LIST)))deno.jsonc)
+PRETTIER := deno run --quiet --allow-read --allow-env --allow-sys $(PRETTIER_PACKAGE)
+PRETTIER_WRITE := deno run --quiet --allow-read --allow-write --allow-env --allow-sys $(PRETTIER_PACKAGE)
 YAML_FILES ?= '**/*.{yml,yaml}'
 
 .PHONY: yaml-lint yaml-format
