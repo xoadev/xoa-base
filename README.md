@@ -52,7 +52,7 @@ come from anyone. The `runs-on` input overrides all of this.
 
 - `make check`: the Markdown's layout, the website's checks over the test site in `test/site`,
   monolingual and bilingual, with the cases that must fail, the image policy over `test/image` and
-  the Dockerfiles in `test/image/rejected`, and the shared head of `AGENTS.md`.
+  the Dockerfiles in `test/image/rejected`.
 - `make test-fetch`: a scratch project fetches `container/` with the snippet above, at this commit
   (`XOA_BASE_TEST=<sha>` for another), and its policy runs. It needs the commit on GitHub.
 - `make test-image`: the image's lint and check over the test image, for amd64 and arm64. It needs

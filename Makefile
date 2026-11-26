@@ -1,9 +1,5 @@
 # xoa-base — task runner. `make check` is what CI runs.
 .DEFAULT_GOAL := help
-# The shared head of AGENTS.md, above its <!-- xoadev:end --> line, comes from AGENTS_URL.
-AGENTS_URL := https://xoa.dev/_dev/OSS_AGENTS.md
-AGENTS_SCRIPT := https://xoa.dev/_dev/agents.sh
-
 # shellcheck and actionlint, fetched into BIN and checked against their sha256: the same version here and in CI.
 BIN := .tmp/bin
 SHELLCHECK_VERSION := 0.11.0
@@ -35,9 +31,9 @@ IMAGE_CONTEXT := test/image
 IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && busybox cat /data/probe')" = ok
 include container/image.mk
 
-.PHONY: check lint test format test-fetch test-web test-rejections test-image-policy test-image agents-sync agents-check help
+.PHONY: check lint test format test-fetch test-web test-rejections test-image-policy test-image help
 
-check: lint test agents-check ## Everything CI runs but the image check, which needs Docker
+check: lint test ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
 
 lint: $(BIN)/shellcheck $(BIN)/actionlint ## The Markdown's layout, the checkers' sources, the shell scripts and the workflows
@@ -82,10 +78,6 @@ test-image: ## The image's lint and check over the test image, for both architec
 	  echo "$$out"; echo "image check: a server that ignores SIGTERM should fail" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'it ignores SIGTERM'; then echo "$$out"; echo "image check: failed for another reason" >&2; exit 1; fi
 	@echo "image check: OK"
-
-agents-sync agents-check:
-	@if s=$$(curl -fsS --max-time 20 '$(AGENTS_SCRIPT)'); then sh -c "$$s" agents $(@:agents-%=%) '$(AGENTS_URL)'; \
-	else echo "warning: $(AGENTS_SCRIPT) unreachable, $@ not run" >&2; [ $@ = agents-check ]; fi
 
 help:
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-17s %s\n", $$1, $$2}'

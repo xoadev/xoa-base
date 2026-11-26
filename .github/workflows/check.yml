@@ -45,7 +45,7 @@ jobs:
         with:
           deno-version: v2.9.7
 
-      - run: make lint test-image-policy test-fetch agents-check
+      - run: make lint test-image-policy test-fetch
 
   web:
     # Editing the description re-runs the workflow for the title only.
