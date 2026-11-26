@@ -1,6 +1,5 @@
-// From github.com/xoadev/xoa-base (website/web/_content_test.ts), fetched by the project's Makefile: change it there.
-// The tests of _content.ts (`deno task content`): on pages and collections written here, in a folder of their own.
-import { content, page, sections, type Tree, validate } from "./_content.ts";
+// The tests of content.ts (make test-content): on pages and collections written here, in a folder of their own.
+import { content, page, sections, type Tree, validate } from "./content.ts";
 const DEFAULT_LANGUAGE = "es";
 
 async function folder(files: Record<string, string>): Promise<URL> {

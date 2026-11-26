@@ -4,12 +4,14 @@
   },
   "imports": {
     "lume/": "https://deno.land/x/lume@v3.2.5/",
-    "xoa-web/": "../../website/web/"
+    "xoa-web/": "../../website/"
   },
   "tasks": {
     "lume": "echo \"import 'lume/cli.ts'\" | deno run -A -",
     "build": "deno task lume",
-    "serve": "deno task lume -s"
+    "serve": "deno task lume -s",
+    "a11y": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A -",
+    "browser": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A - --install"
   },
   "compilerOptions": {
     "types": [

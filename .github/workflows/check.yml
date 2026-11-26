@@ -52,7 +52,7 @@ jobs:
     if: github.event.action != 'edited'
     uses: ./.github/workflows/web.yml
     with:
-      directory: website/web
+      directory: test/site
       target: test-web
 
   image:

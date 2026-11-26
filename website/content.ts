@@ -1,4 +1,4 @@
-// From github.com/xoadev/xoa-base (website/web/_content.ts), fetched by the project's Makefile: change it there.
+// From github.com/xoadev/xoa-base (website/content.ts): change it there.
 // The site's prose, read as the website skill writes it ("Languages"): `_content/<lang>/<page>.md`, one file per page
 // and language, and `_content/<lang>/<collection>/<id>.md`, one file per item of a collection. `_data.ts` calls
 // `loadContent()` and hands each language's tree to the pages as `c`.

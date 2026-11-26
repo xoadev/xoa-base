@@ -1,0 +1,20 @@
+// The checks' own configuration, for their tests and lint here. A site does not read it: it imports the modules by URL
+// with its own deno.json, so they name their dependencies in full, and share only the site's Lume (`lume/`).
+{
+  "lock": {
+    "frozen": true
+  },
+  "imports": {
+    "lume/": "https://deno.land/x/lume@v3.2.5/"
+  },
+  "fmt": {
+    "lineWidth": 120,
+    "exclude": ["node_modules/"]
+  },
+  "lint": {
+    "exclude": ["node_modules/"],
+    // Inline npm: and jsr: specifiers on purpose: the site that imports these modules has no names for them.
+    "rules": { "exclude": ["no-import-prefix"] }
+  },
+  "nodeModulesDir": "auto"
+}

@@ -1,5 +1,6 @@
 import lume from "lume/mod.ts";
 import multilanguage from "lume/plugins/multilanguage.ts";
+import xoa from "xoa-web/mod.ts";
 import { SITE } from "./_data.ts";
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./_languages.ts";
 
@@ -10,8 +11,8 @@ const site = lume({ location: new URL(SITE) });
 // live under /<code>/. With one language it changes nothing.
 site.use(multilanguage({ languages: Object.keys(LANGUAGES), defaultLanguage: DEFAULT_LANGUAGE }));
 
-// A value as JSON inside a page: a `<` could close the script block.
-site.filter("json", (value: unknown) => JSON.stringify(value).replaceAll("<", "\\u003c"));
+// XOA's checks of what each build makes, and the `json` filter of the pages' JSON-LD.
+site.use(xoa());
 
 site.add("styles.css");
 site.add("assets");

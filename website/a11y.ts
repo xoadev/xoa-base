@@ -1,10 +1,19 @@
-// From github.com/xoadev/xoa-base (website/web/_a11y.ts), fetched by the project's Makefile: change it there.
-// The accessibility check of the built site (`deno task a11y`, after `deno task build`): every page of the sitemap,
+// From github.com/xoadev/xoa-base (website/a11y.ts): change it there.
+// The accessibility check of the built site, `_site` (the site's `deno task a11y`, after its build): every page of the sitemap,
 // and the 404, at a desktop and a phone width, in light and dark mode. A page fails on any axe-core violation of WCAG 2.2 AA or its best
 // practices, on a horizontal scroll, and on a console error, which is where a Content Security Policy violation shows.
-import { serveDir } from "@std/http/file-server";
-import { chromium } from "playwright";
-import { AxeBuilder } from "@axe-core/playwright";
+// The site runs it from its own deno.json, so its dependencies are named in full here, and Playwright once.
+import { serveDir } from "jsr:@std/http@1.1.0/file-server";
+import { chromium } from "npm:playwright@1.64.1";
+import { AxeBuilder } from "npm:@axe-core/playwright@4.14.0";
+
+// `--install` downloads the headless Chromium of this Playwright, once per machine, and does nothing else.
+if (Deno.args.includes("--install")) {
+  const install = new Deno.Command(Deno.execPath(), {
+    args: ["run", "-A", "npm:playwright@1.64.1", "install", "chromium-headless-shell"],
+  });
+  Deno.exit((await install.spawn().status).code);
+}
 
 const WIDTHS = [1280, 360];
 const SCHEMES = ["light", "dark"] as const;

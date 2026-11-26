@@ -4,8 +4,9 @@
 #     web:
 #       uses: xoadev/xoa-base/.github/workflows/web.yml@<sha> # vX.Y.Z
 #
-# It runs the project's own `make web-check`, with web.mk and the checks copied from this repository. Deploying the
-# site is the project's workflow, which takes the pages from `make web` (web/_site).
+# It runs the project's own `make web-browser` and `make web-check`: its site imports this repository's Lume plugin by
+# the same commit, so its build runs the checks, and its a11y task the accessibility check. Deploying the site is the
+# project's own workflow, which takes the pages its build makes.
 name: web
 
 on:

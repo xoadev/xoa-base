@@ -1,5 +1,15 @@
 // Exercise the installed checker against broken output, restoring each file before the next case.
 const root = "build/bilingual";
+// The SEO check alone, over the built site: the test site's SITE.
+const seo = [
+  "run",
+  "--config",
+  "website/deno.json",
+  "-A",
+  "website/seo.ts",
+  `${root}/_site`,
+  "https://example.xoa.dev",
+];
 const cases: [string, string, (text: string) => string, string][] = [
   [
     "404 indexable",
@@ -90,15 +100,8 @@ for (const [name, file, mutate, expected] of cases) {
   }
   try {
     await Deno.writeTextFile(path, changed);
-    const result = await new Deno.Command("make", {
-      args: [
-        "-s",
-        "--no-print-directory",
-        "web-seo",
-        "-o",
-        "web",
-        `WEB=${root}`,
-      ],
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: seo,
       stdout: "piped",
       stderr: "piped",
     }).output();
@@ -115,15 +118,8 @@ for (const file of ["favicon-96.png", "404.html"]) {
   const icon = `${root}/_site/${file}`;
   await Deno.rename(icon, `${icon}.saved`);
   try {
-    const result = await new Deno.Command("make", {
-      args: [
-        "-s",
-        "--no-print-directory",
-        "web-seo",
-        "-o",
-        "web",
-        `WEB=${root}`,
-      ],
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: seo,
       stdout: "piped",
       stderr: "piped",
     }).output();
@@ -143,19 +139,14 @@ for (const file of ["favicon-96.png", "404.html"]) {
 const markdown = `${root}/rejected.md`;
 await Deno.writeTextFile(markdown, "Some <b>bold</b> text.\n");
 try {
-  const result = await new Deno.Command("make", {
-    args: [
-      "-s",
-      "--no-print-directory",
-      "web-lint",
-      "-o",
-      "web",
-      `WEB=${root}`,
-    ],
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["task", "build"],
+    cwd: root,
     stdout: "piped",
   }).output();
   if (
-    result.success || !new TextDecoder().decode(result.stderr).includes("MD033")
+    result.success ||
+    !new TextDecoder().decode(result.stderr).includes("HTML in Markdown")
   ) {
     throw new Error("HTML in Markdown was not rejected");
   }

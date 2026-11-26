@@ -5,7 +5,7 @@ credentials.
 
 | Folder       | For                                                                       |
 | ------------ | ------------------------------------------------------------------------- |
-| `website/`   | A static Lume site; what it checks, in `website/web.mk`                   |
+| `website/`   | A static Lume site; what it checks, in `website/mod.ts` and `a11y.ts`     |
 | `container/` | A container image; what it checks, in `container/image.mk` and `image.sh` |
 
 ## Using it in a project
@@ -33,9 +33,7 @@ test: image-check
 # xoadev/xoa-base at this commit, the one the workflows call too. make fetches it into .xoa-base/
 # when it is missing or at another commit, and git checks it against the commit's hash.
 XOA_BASE := <sha>
-# The areas the project uses.
 include .xoa-base/$(XOA_BASE)/container/image.mk
-include .xoa-base/$(XOA_BASE)/website/web.mk
 .xoa-base/$(XOA_BASE)/%: .xoa-base/$(XOA_BASE)/.fetched ;
 .xoa-base/$(XOA_BASE)/.fetched:
 	@rm -rf .xoa-base && git init -q $(@D)
@@ -43,20 +41,31 @@ include .xoa-base/$(XOA_BASE)/website/web.mk
 	@git -C $(@D) checkout -q FETCH_HEAD && touch $@
 ```
 
-**`website/`** is fetched the same way. The checks run with this repository's `deno.json` and frozen
-lock, so the site's own `deno.json` holds only what it builds with: its `build` and `serve` tasks
-and its dependencies. It also maps `xoa-web/` to the fetched reader of `_content/`, through the link
-`make` keeps at `.xoa-base/current`, so the commit is written once:
+**`website/`** is a Lume plugin and a script that the site imports as Deno modules, by the same
+commit, with nothing fetched by `make`. The site's `deno.json` maps them, and its `deno.lock` holds
+their hashes:
 
 ```json
-{ "imports": { "xoa-web/": "../.xoa-base/current/website/web/" } }
+{
+  "imports": { "xoa-web/": "https://raw.githubusercontent.com/xoadev/xoa-base/<sha>/website/" },
+  "tasks": {
+    "a11y": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A -",
+    "browser": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A - --install"
+  }
+}
 ```
 
-The site's `_data.ts` reads its prose with
-`loadContent({ root: new URL("./_content/", import.meta.url), languages, defaultLanguage })` from
-`xoa-web/_content.ts`, and `SITE`, the origin the checks expect, is exported there too. The
-project's `Makefile` sets `WEB` to the site's folder and wires `web-lint` into `lint` and
-`web-seo web-a11y` into `test`.
+- Its `_config.ts` runs `site.use(xoa())`, imported from `xoa-web/mod.ts`. Every build then checks
+  what it made (what, in `website/mod.ts`) and fails on any failure; while serving, it prints them.
+  The plugin also gives the pages the `json` filter for their JSON-LD.
+- Its `_data.ts` reads the prose with `loadContent({ root, languages, defaultLanguage })` from
+  `xoa-web/mod.ts`.
+- `deno task a11y` checks the built site in a browser, which `deno task browser` installs once.
+- The modules share the site's `lume/`, so the site's Lume is theirs too.
+
+The project's `Makefile` runs them through the two targets the CI's workflow calls: `web-check`
+(`cd <site> && deno fmt --check && deno lint && deno task build && deno task a11y`) and
+`web-browser` (`cd <site> && deno task browser`).
 
 **The CI** calls the reusable workflow by the same commit, in `.github/workflows/image.yml`:
 
