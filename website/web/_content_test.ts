@@ -80,11 +80,20 @@ Deno.test("languages are compared with the default by key and by id, not by posi
   const reordered = await tree({ "home.md": home("hero", "two", "one"), "projects/ruas.md": "---\n---\n\nB.\n" });
   validate({ [DEFAULT_LANGUAGE]: reference, other: reordered }, DEFAULT_LANGUAGE);
   const renamed = await tree({ "home.md": home("hero", "uno", "two"), "projects/ruas.md": "---\n---\n\nB.\n" });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: renamed }, DEFAULT_LANGUAGE), "missing .home.hero.items.#one");
+  await rejects(
+    () => validate({ [DEFAULT_LANGUAGE]: reference, other: renamed }, DEFAULT_LANGUAGE),
+    "missing .home.hero.items.#one",
+  );
   const translated = await tree({ "home.md": home("inicio", "one", "two"), "projects/ruas.md": "---\n---\n\nB.\n" });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: translated }, DEFAULT_LANGUAGE), "extra .home.inicio");
+  await rejects(
+    () => validate({ [DEFAULT_LANGUAGE]: reference, other: translated }, DEFAULT_LANGUAGE),
+    "extra .home.inicio",
+  );
   const lacking = await tree({ "home.md": home("hero", "one", "two") });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: lacking }, DEFAULT_LANGUAGE), "missing .projects.#ruas");
+  await rejects(
+    () => validate({ [DEFAULT_LANGUAGE]: reference, other: lacking }, DEFAULT_LANGUAGE),
+    "missing .projects.#ruas",
+  );
 });
 
 Deno.test("what is declared in some languages only exists in exactly those", async () => {
@@ -102,5 +111,8 @@ Deno.test("what is declared in some languages only exists in exactly those", asy
     () => validate({ [DEFAULT_LANGUAGE]: without, other: without }, DEFAULT_LANGUAGE, "_content", only),
     `home.videos is declared in ${DEFAULT_LANGUAGE} and is not there`,
   );
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }, DEFAULT_LANGUAGE), "missing .home.videos");
+  await rejects(
+    () => validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }, DEFAULT_LANGUAGE),
+    "missing .home.videos",
+  );
 });
