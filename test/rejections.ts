@@ -4,7 +4,7 @@ const root = "build/bilingual";
 const seo = [
   "run",
   "--config",
-  "website/deno.json",
+  "website/deno.jsonc",
   "-A",
   "website/seo.ts",
   `${root}/_site`,
