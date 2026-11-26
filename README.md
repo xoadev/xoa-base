@@ -13,7 +13,10 @@ credentials.
 A project names one commit of this repository and never edits what it takes from it: a change goes
 here, and the project moves to the new commit.
 
-Until there are releases, the commit is one of `main`.
+The commit is a release's, named in the project's workflows as `@<sha> # vX.Y.Z`: Dependabot's
+`github-actions` ecosystem moves it there, with the same week's cooldown as everything else. The
+`Makefile` reads it from those workflows, and the site's plugin fails its build when its `deno.json`
+is left at another commit, saying where to move it.
 
 **`container/`** is fetched by `make` into `.xoa-base/`, which the project's `.gitignore` lists. The
 project's `Makefile` sets the variables `image.mk` lists, wires its targets into its own, and then
@@ -61,8 +64,11 @@ jobs:
     uses: xoadev/xoa-base/.github/workflows/image.yml@<sha>
 ```
 
-Moving to another commit is one pull request that changes `XOA_BASE` and the workflow's SHA
-together; nothing checks that they match.
+**Releases** are this repository's own workflows too. `release-draft.yml` rewrites, on every push to
+`main`, the draft of the next version that convco reads in the Conventional Commits; `release.yml`,
+run by hand, publishes it and makes its tag. A project calls them the same way, the draft from a
+push to `main` and the publication from a `workflow_dispatch`, with `contents: write`; one that
+builds binaries or images publishes them in a workflow of its own.
 
 An image compiled in stages that cannot cross-compile builds each architecture on its own runner
 rather than under emulation: two jobs, one with `platforms: linux/arm64` and
