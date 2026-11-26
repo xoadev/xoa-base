@@ -1,10 +1,9 @@
-// Copied from github.com/xoadev/xoa-base (website/web/_content.ts): change it there, not in a project's copy.
+// From github.com/xoadev/xoa-base (website/web/_content.ts), fetched by the project's Makefile: change it there.
 // The site's prose, read as the website skill writes it ("Languages"): `_content/<lang>/<page>.md`, one file per page
 // and language, and `_content/<lang>/<collection>/<id>.md`, one file per item of a collection. `_data.ts` calls
 // `loadContent()` and hands each language's tree to the pages as `c`.
 import { extract } from "lume/deps/front_matter.ts";
 import { markdownIt, markdownItAttrs } from "lume/deps/markdown_it.ts";
-import { DEFAULT_LANGUAGE, LANGUAGES } from "./_languages.ts";
 
 export type Tree = { [key: string]: unknown };
 type Item = { id?: string; title: string; body: string };
@@ -144,18 +143,23 @@ function at(tree: Tree, path: string): unknown {
 
 // Each language against the default: a key, a section or an item one has and the other lacks fails the build, but
 // for what `only` declares.
-export function validate(trees: Record<string, Tree>, where = "_content", only: Only = {}): void {
+export function validate(
+  trees: Record<string, Tree>,
+  defaultLanguage: string,
+  where = "_content",
+  only: Only = {},
+): void {
   const declared = (key: string) =>
     Object.keys(only).some((path) => key.startsWith(`.${path}.`) || key.startsWith(`.${path}:`));
   const shared = (tree: Tree) => keys(tree).filter((key) => !declared(key)).sort();
-  const expected = shared(trees[DEFAULT_LANGUAGE]);
+  const expected = shared(trees[defaultLanguage]);
   for (const [code, tree] of Object.entries(trees)) {
     const found = shared(tree);
     const missing = expected.filter((key) => !found.includes(key));
     const extra = found.filter((key) => !expected.includes(key));
     if (missing.length || extra.length) {
       throw new Error(
-        `${where}/${code}/ differs from ${DEFAULT_LANGUAGE}: missing ${missing.join(", ") || "nothing"}; ` +
+        `${where}/${code}/ differs from ${defaultLanguage}: missing ${missing.join(", ") || "nothing"}; ` +
           `extra ${extra.join(", ") || "nothing"}`,
       );
     }
@@ -171,13 +175,19 @@ export function validate(trees: Record<string, Tree>, where = "_content", only: 
   }
 }
 
-// The prose of every language of the site, `_content/<lang>/` next to this file, checked against the default one;
-// `only` declares what exists in some languages only (see `validate`).
+// The prose of every language of the site, `<root>/<lang>/`, checked against the default one; `only` declares what
+// exists in some languages only (see `validate`). The site passes its own folder and languages:
+//   loadContent({ root: new URL("./_content/", import.meta.url), languages: Object.keys(LANGUAGES), defaultLanguage })
 export async function loadContent(
-  { root = new URL("./_content/", import.meta.url), only = {} }: { root?: URL; only?: Only } = {},
+  { root, languages, defaultLanguage, only = {} }: {
+    root: URL;
+    languages: string[];
+    defaultLanguage: string;
+    only?: Only;
+  },
 ): Promise<Record<string, Tree>> {
   const trees: Record<string, Tree> = {};
-  for (const code of Object.keys(LANGUAGES)) trees[code] = await content(new URL(`${code}/`, root));
-  validate(trees, root.pathname.replace(/\/$/, ""), only);
+  for (const code of languages) trees[code] = await content(new URL(`${code}/`, root));
+  validate(trees, defaultLanguage, root.pathname.replace(/\/$/, ""), only);
   return trees;
 }

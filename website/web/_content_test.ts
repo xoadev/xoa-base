@@ -1,7 +1,7 @@
-// Copied from github.com/xoadev/xoa-base (website/web/_content_test.ts): change it there, not in a project's copy.
+// From github.com/xoadev/xoa-base (website/web/_content_test.ts), fetched by the project's Makefile: change it there.
 // The tests of _content.ts (`deno task content`): on pages and collections written here, in a folder of their own.
 import { content, page, sections, type Tree, validate } from "./_content.ts";
-import { DEFAULT_LANGUAGE } from "./_languages.ts";
+const DEFAULT_LANGUAGE = "es";
 
 async function folder(files: Record<string, string>): Promise<URL> {
   const root = await Deno.makeTempDir();
@@ -78,13 +78,13 @@ Deno.test("languages are compared with the default by key and by id, not by posi
     `---\nhero: { title: Hola }\n---\n\n# ${heading}\n\n## Uno {#${one}}\n\nA.\n\n## Dos {#${two}}\n\nB.\n`;
   const reference = await tree({ "home.md": home("hero", "one", "two"), "projects/ruas.md": "---\n---\n\nA.\n" });
   const reordered = await tree({ "home.md": home("hero", "two", "one"), "projects/ruas.md": "---\n---\n\nB.\n" });
-  validate({ [DEFAULT_LANGUAGE]: reference, other: reordered });
+  validate({ [DEFAULT_LANGUAGE]: reference, other: reordered }, DEFAULT_LANGUAGE);
   const renamed = await tree({ "home.md": home("hero", "uno", "two"), "projects/ruas.md": "---\n---\n\nB.\n" });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: renamed }), "missing .home.hero.items.#one");
+  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: renamed }, DEFAULT_LANGUAGE), "missing .home.hero.items.#one");
   const translated = await tree({ "home.md": home("inicio", "one", "two"), "projects/ruas.md": "---\n---\n\nB.\n" });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: translated }), "extra .home.inicio");
+  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: translated }, DEFAULT_LANGUAGE), "extra .home.inicio");
   const lacking = await tree({ "home.md": home("hero", "one", "two") });
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: lacking }), "missing .projects.#ruas");
+  await rejects(() => validate({ [DEFAULT_LANGUAGE]: reference, other: lacking }, DEFAULT_LANGUAGE), "missing .projects.#ruas");
 });
 
 Deno.test("what is declared in some languages only exists in exactly those", async () => {
@@ -93,14 +93,14 @@ Deno.test("what is declared in some languages only exists in exactly those", asy
   const withVideos = await tree({ "home.md": `${intro}\n# videos\n\nVídeos.\n`, "press/one.md": "---\n---\n\nA.\n" });
   const without = await tree({ "home.md": intro });
   const only = { "home.videos": [DEFAULT_LANGUAGE], press: [DEFAULT_LANGUAGE] };
-  validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }, "_content", only);
+  validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }, DEFAULT_LANGUAGE, "_content", only);
   await rejects(
-    () => validate({ [DEFAULT_LANGUAGE]: withVideos, other: withVideos }, "_content", only),
+    () => validate({ [DEFAULT_LANGUAGE]: withVideos, other: withVideos }, DEFAULT_LANGUAGE, "_content", only),
     `home.videos is declared only in ${DEFAULT_LANGUAGE}`,
   );
   await rejects(
-    () => validate({ [DEFAULT_LANGUAGE]: without, other: without }, "_content", only),
+    () => validate({ [DEFAULT_LANGUAGE]: without, other: without }, DEFAULT_LANGUAGE, "_content", only),
     `home.videos is declared in ${DEFAULT_LANGUAGE} and is not there`,
   );
-  await rejects(() => validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }), "missing .home.videos");
+  await rejects(() => validate({ [DEFAULT_LANGUAGE]: withVideos, other: without }, DEFAULT_LANGUAGE), "missing .home.videos");
 });

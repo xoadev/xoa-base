@@ -90,9 +90,15 @@ for (const [name, file, mutate, expected] of cases) {
   }
   try {
     await Deno.writeTextFile(path, changed);
-    const result = await new Deno.Command(Deno.execPath(), {
-      args: ["task", "seo"],
-      cwd: root,
+    const result = await new Deno.Command("make", {
+      args: [
+        "-s",
+        "--no-print-directory",
+        "web-seo",
+        "-o",
+        "web",
+        `WEB=${root}`,
+      ],
       stdout: "piped",
       stderr: "piped",
     }).output();
@@ -109,9 +115,15 @@ for (const file of ["favicon-96.png", "404.html"]) {
   const icon = `${root}/_site/${file}`;
   await Deno.rename(icon, `${icon}.saved`);
   try {
-    const result = await new Deno.Command(Deno.execPath(), {
-      args: ["task", "seo"],
-      cwd: root,
+    const result = await new Deno.Command("make", {
+      args: [
+        "-s",
+        "--no-print-directory",
+        "web-seo",
+        "-o",
+        "web",
+        `WEB=${root}`,
+      ],
       stdout: "piped",
       stderr: "piped",
     }).output();
@@ -131,9 +143,15 @@ for (const file of ["favicon-96.png", "404.html"]) {
 const markdown = `${root}/rejected.md`;
 await Deno.writeTextFile(markdown, "Some <b>bold</b> text.\n");
 try {
-  const result = await new Deno.Command(Deno.execPath(), {
-    args: ["task", "md"],
-    cwd: root,
+  const result = await new Deno.Command("make", {
+    args: [
+      "-s",
+      "--no-print-directory",
+      "web-lint",
+      "-o",
+      "web",
+      `WEB=${root}`,
+    ],
     stdout: "piped",
   }).output();
   if (

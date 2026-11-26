@@ -5,3 +5,4 @@ id: index
 {{ set page = t.index }}
 <h1>{{ page.heading }}</h1>
 <p class="lead">{{ page.lead }}</p>
+{{ c.index.intro.body |> md }}

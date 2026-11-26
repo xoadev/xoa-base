@@ -6,6 +6,8 @@ export const SITE = "https://example.xoa.dev";
 // The site's language: every page's, unless a page is translated (`lang: [es, en]` in its front matter). Its texts,
 // _texts/<code>.yml, are the reference of any translation.
 import { DEFAULT_LANGUAGE, LANGUAGES } from "./_languages.ts";
+// The prose, _content/<code>/, read and checked by xoa-base's reader: a project maps xoa-web/ to .xoa-base/current/.
+import { loadContent } from "xoa-web/_content.ts";
 
 // The color of the browser's bar, the --ink of styles.css.
 const theme = "#0a0a0a";
@@ -35,6 +37,12 @@ for (const code of Object.keys(LANGUAGES)) {
 }
 if (!texts[DEFAULT_LANGUAGE]) throw new Error(`_texts/${DEFAULT_LANGUAGE}.yml is missing: it is DEFAULT_LANGUAGE`);
 
+const content = await loadContent({
+  root: new URL("./_content/", import.meta.url),
+  languages: Object.keys(LANGUAGES),
+  defaultLanguage: DEFAULT_LANGUAGE,
+});
+
 const expected = new Set(paths(texts[DEFAULT_LANGUAGE]));
 for (const [code, own] of Object.entries(texts)) {
   const found = new Set(paths(own));
@@ -52,5 +60,6 @@ export default {
   languages: LANGUAGES,
   // `t` is the default language's texts; the multilanguage plugin replaces it on a translated page with its own.
   t: texts[DEFAULT_LANGUAGE],
-  ...Object.fromEntries(Object.keys(LANGUAGES).map((code) => [code, { t: texts[code] }])),
+  c: content[DEFAULT_LANGUAGE],
+  ...Object.fromEntries(Object.keys(LANGUAGES).map((code) => [code, { t: texts[code], c: content[code] }])),
 };

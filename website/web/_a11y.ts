@@ -1,4 +1,4 @@
-// Copied from github.com/xoadev/xoa-base (website/web/_a11y.ts): change it there, not in a project's copy.
+// From github.com/xoadev/xoa-base (website/web/_a11y.ts), fetched by the project's Makefile: change it there.
 // The accessibility check of the built site (`deno task a11y`, after `deno task build`): every page of the sitemap,
 // and the 404, at a desktop and a phone width, in light and dark mode. A page fails on any axe-core violation of WCAG 2.2 AA or its best
 // practices, on a horizontal scroll, and on a console error, which is where a Content Security Policy violation shows.

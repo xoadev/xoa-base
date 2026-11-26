@@ -1,10 +1,14 @@
-// Copied from github.com/xoadev/xoa-base (website/web/_seo.ts): change it there, not in a project's copy.
+// From github.com/xoadev/xoa-base (website/web/_seo.ts), fetched by the project's Makefile: change it there.
 // What search engines and shared links read, checked on the built site (`deno task seo`, after `deno task build`):
 // every page in the sitemap and every indexable page built is there, each with a unique title and description, its
 // own canonical URL, its language alternates and social image; the icons, the manifest and robots.txt are there;
 // the JSON-LD parses, and no link or source inside the site points to a file that does not exist.
 import { DOMParser } from "lume/deps/dom.ts";
-import { SITE } from "./_data.ts";
+// The published origin, the SITE of the site's _data.ts, which web.mk reads and passes on.
+const SITE = Deno.env.get("XOA_SITE") ??
+  (() => {
+    throw new Error("no XOA_SITE: run it through make web-seo, which reads SITE from the site's _data.ts");
+  })();
 
 const ROOT = "_site";
 const origin = new URL(SITE).origin;

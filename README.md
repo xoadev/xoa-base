@@ -33,7 +33,9 @@ test: image-check
 # xoadev/xoa-base at this commit, the one the workflows call too. make fetches it into .xoa-base/
 # when it is missing or at another commit, and git checks it against the commit's hash.
 XOA_BASE := <sha>
+# The areas the project uses.
 include .xoa-base/$(XOA_BASE)/container/image.mk
+include .xoa-base/$(XOA_BASE)/website/web.mk
 .xoa-base/$(XOA_BASE)/%: .xoa-base/$(XOA_BASE)/.fetched ;
 .xoa-base/$(XOA_BASE)/.fetched:
 	@rm -rf .xoa-base && git init -q $(@D)
@@ -41,9 +43,20 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 	@git -C $(@D) checkout -q FETCH_HEAD && touch $@
 ```
 
-**`website/`** is still copied: `website/web.mk` to the project root and `website/web/` into the
-site's folder, recording the commit. Its checks run inside the site's own Deno configuration, which
-the project extends.
+**`website/`** is fetched the same way. The checks run with this repository's `deno.json` and frozen
+lock, so the site's own `deno.json` holds only what it builds with: its `build` and `serve` tasks
+and its dependencies. It also maps `xoa-web/` to the fetched reader of `_content/`, through the link
+`make` keeps at `.xoa-base/current`, so the commit is written once:
+
+```json
+{ "imports": { "xoa-web/": "../.xoa-base/current/website/web/" } }
+```
+
+The site's `_data.ts` reads its prose with
+`loadContent({ root: new URL("./_content/", import.meta.url), languages, defaultLanguage })` from
+`xoa-web/_content.ts`, and `SITE`, the origin the checks expect, is exported there too. The
+project's `Makefile` sets `WEB` to the site's folder and wires `web-lint` into `lint` and
+`web-seo web-a11y` into `test`.
 
 **The CI** calls the reusable workflow by the same commit, in `.github/workflows/image.yml`:
 
