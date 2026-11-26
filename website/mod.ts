@@ -2,7 +2,7 @@
 // The Lume plugin of a XOA site. Its _config.ts runs `site.use(xoa())`, and every build checks what it built: the
 // pages with html-validate (its accessibility rules too), the stylesheets with Stylelint, the prose for HTML inside
 // Markdown, and the SEO of seo.ts. A failure fails `deno task build`; while serving, it is printed and the site stays
-// up. The accessibility check needs a browser, so it is a script of its own, a11y.ts.
+// up. The accessibility check needs a browser, so it runs apart: `a11y()`, from a11y.ts.
 import type Site from "lume/core/site.ts";
 import { markdownIt } from "lume/deps/markdown_it.ts";
 import { HtmlValidate } from "npm:html-validate@11.16.1";
@@ -12,6 +12,7 @@ import standard from "npm:stylelint-config-standard@40.0.0";
 import { checkSeo } from "./seo.ts";
 
 export { loadContent } from "./content.ts";
+export { a11y, installBrowser } from "./a11y.ts";
 
 const html = new HtmlValidate({
   extends: ["html-validate:recommended", "html-validate:a11y"],

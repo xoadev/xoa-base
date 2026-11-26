@@ -43,14 +43,14 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 
 **`website/`** is a Lume plugin and a script that the site imports as Deno modules, by the same
 commit, with nothing fetched by `make`. The site's `deno.json` maps them, and its `deno.lock` holds
-their hashes:
+their hashes, all of them after one build, since the plugin imports every module:
 
 ```json
 {
   "imports": { "xoa-web/": "https://raw.githubusercontent.com/xoadev/xoa-base/<sha>/website/" },
   "tasks": {
-    "a11y": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A -",
-    "browser": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A - --install"
+    "a11y": "echo \"import { a11y } from 'xoa-web/mod.ts'; await a11y()\" | deno run -A -",
+    "browser": "echo \"import { installBrowser } from 'xoa-web/mod.ts'; await installBrowser()\" | deno run -A -"
   }
 }
 ```

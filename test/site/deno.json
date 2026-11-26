@@ -10,8 +10,8 @@
     "lume": "echo \"import 'lume/cli.ts'\" | deno run -A -",
     "build": "deno task lume",
     "serve": "deno task lume -s",
-    "a11y": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A -",
-    "browser": "echo \"import 'xoa-web/a11y.ts'\" | deno run -A - --install"
+    "a11y": "echo \"import { a11y } from 'xoa-web/mod.ts'; await a11y()\" | deno run -A -",
+    "browser": "echo \"import { installBrowser } from 'xoa-web/mod.ts'; await installBrowser()\" | deno run -A -"
   },
   "compilerOptions": {
     "types": [
