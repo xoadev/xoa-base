@@ -14,7 +14,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: check-${{ github.ref }}
+  # An edit of the description runs the title only, in a group of its own, so it never cancels a full run.
+  group: check-${{ github.ref }}-${{ github.event.action == 'edited' && 'title' || 'all' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
