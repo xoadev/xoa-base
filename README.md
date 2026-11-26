@@ -3,10 +3,11 @@
 The checks and workflows shared by XOA Desarrollo's projects, for anyone to use: they need no
 credentials.
 
-| Folder       | For                                                                       |
-| ------------ | ------------------------------------------------------------------------- |
-| `website/`   | A static Lume site; what it checks, in `website/mod.ts` and `a11y.ts`     |
-| `container/` | A container image; what it checks, in `container/image.mk` and `image.sh` |
+| Folder       | For                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------- |
+| `website/`   | A static Lume site; what it checks, in `website/mod.ts` and `a11y.ts`                 |
+| `container/` | A container image; what it checks, in `container/image.mk` and `image.sh`             |
+| `lint/`      | The linters any repository may need, one `.mk` each: Markdown, YAML, shell, workflows |
 
 ## Using it in a project
 
@@ -44,6 +45,11 @@ include .xoa-base/$(XOA_BASE)/container/image.mk
 	@git -C $(@D) fetch -q --depth 1 https://github.com/xoadev/xoa-base $(XOA_BASE)
 	@git -C $(@D) checkout -q FETCH_HEAD && touch $@
 ```
+
+**`lint/`** is fetched the same way: a project includes the linters it needs next to its area's
+(`include .xoa-base/$(XOA_BASE)/lint/markdown.mk`, and so on) and puts their targets in its `lint`.
+Each says in its first lines what it checks and how; the tools they download land inside
+`.xoa-base/`.
 
 **`website/`** is a Lume plugin the site imports by the same commit, with nothing fetched by `make`:
 how, and the format of the site's prose it reads, in [`website/README.md`](website/README.md).

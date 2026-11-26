@@ -25,7 +25,7 @@ on:
           own runners, the JSON labels in its Actions variable SELF_HOSTED_DOCKER_RUNNER, or else SELF_HOSTED_RUNNER, with Docker, and anything else on GitHub's, since a
           public repository's pull requests come from anyone.
         type: string
-        default: ''
+        default: ""
 
 permissions:
   contents: read

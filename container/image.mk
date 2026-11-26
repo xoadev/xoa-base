@@ -30,15 +30,15 @@ IMAGE_SH := $(IMAGE_HOME)tools/image.sh
 PLATFORMS ?= linux/$(subst aarch64,arm64,$(subst x86_64,amd64,$(shell uname -m)))
 export IMAGE IMAGE_DOCKERFILE IMAGE_CONTEXT IMAGE_CHECK IMAGE_BUILD_ARGS IMAGE_STOP IMAGE_MEMORY PLATFORMS
 
-# hadolint, fetched into IMAGE_BIN and checked against its sha256: the same version here and in CI.
-IMAGE_BIN ?= $(IMAGE_HOME)../.tmp/bin
+# hadolint, checked against its sha256, with its version in its name so a new one is fetched rather than an old one
+# reused: the same here and in CI.
+include $(IMAGE_HOME)../lint/fetch.mk
 HADOLINT_VERSION := 2.15.1
-# The version is in the binary's name, so a new one is fetched and checked rather than an old one reused.
-HADOLINT = $(IMAGE_BIN)/hadolint-$(HADOLINT_VERSION)
-HADOLINT_ARCH := $(shell uname -m)
-ifeq ($(HADOLINT_ARCH),x86_64)
+HADOLINT := $(XOA_TOOLS)/hadolint-$(HADOLINT_VERSION)
+ifeq ($(XOA_ARCH),x86_64)
+HADOLINT_ARCH := x86_64
 HADOLINT_SHA256 := c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
-else ifeq ($(HADOLINT_ARCH),aarch64)
+else ifeq ($(XOA_ARCH),aarch64)
 HADOLINT_ARCH := arm64
 HADOLINT_SHA256 := f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d
 endif
@@ -57,9 +57,5 @@ image-oci: $(IMAGE_DEPS) ## Every platform of PLATFORMS in one OCI archive, OCI=
 	@$(IMAGE_SH) oci "$(OCI)"
 
 $(HADOLINT):
-	@test -n "$(HADOLINT_SHA256)" || { echo "image: no pinned hadolint for $(HADOLINT_ARCH): add its sha256 to image.mk" >&2; exit 1; }
-	@mkdir -p $(IMAGE_BIN)
-	@curl -fsSL --proto '=https' --retry 3 -o $@.download \
-	  https://github.com/hadolint/hadolint/releases/download/v$(HADOLINT_VERSION)/hadolint-linux-$(HADOLINT_ARCH)
-	@echo '$(HADOLINT_SHA256)  $@.download' | sha256sum -c --quiet - || { rm -f $@.download; exit 1; }
+	$(call xoa-fetch,https://github.com/hadolint/hadolint/releases/download/v$(HADOLINT_VERSION)/hadolint-linux-$(HADOLINT_ARCH),$(HADOLINT_SHA256))
 	@chmod 0755 $@.download && mv $@.download $@

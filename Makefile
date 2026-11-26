@@ -1,20 +1,7 @@
 # xoa-base — task runner. `make check` is what CI runs.
 .DEFAULT_GOAL := help
-# shellcheck and actionlint, fetched into BIN and checked against their sha256: the same version here and in CI.
-BIN := .tmp/bin
-SHELLCHECK_VERSION := 0.11.0
-ACTIONLINT_VERSION := 1.7.12
-ifeq ($(shell uname -m),aarch64)
-SHELLCHECK_ARCH := aarch64
-ACTIONLINT_ARCH := arm64
-SHELLCHECK_SHA256 := 12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588
-ACTIONLINT_SHA256 := 325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6
-else
-SHELLCHECK_ARCH := x86_64
-ACTIONLINT_ARCH := amd64
-SHELLCHECK_SHA256 := 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
-ACTIONLINT_SHA256 := 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-endif
+# The generic linters, as a project includes them; container/image.mk below brings hadolint.
+include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk
 
 # The website's checks are a Lume plugin and a script, which the test site imports as a project's site does: its
 # build runs them, and its a11y task the accessibility check. A copy in build/ is what gets built and broken.
@@ -36,17 +23,12 @@ include container/image.mk
 check: lint test ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
 
-lint: $(BIN)/shellcheck $(BIN)/actionlint ## The Markdown's layout, the checkers' sources, the shell scripts and the workflows
-	@deno run --quiet --allow-read --allow-env --allow-sys npm:prettier@3.9.6 --check --prose-wrap always \
-	  --print-width 100 '**/*.md'
+lint: md-lint yaml-lint shell-lint actions-lint ## The Markdown, YAML, shell scripts and workflows, and the checks' sources
 	@deno fmt --check test/*.ts
 	@deno lint test/*.ts
 	@cd $(CHECKS_WEB) && deno fmt --check && deno lint
-	@$(BIN)/shellcheck container/tools/image.sh
-	@$(BIN)/actionlint -shellcheck $(BIN)/shellcheck
 
-format: ## Format Markdown and checker sources
-	@deno run --quiet --allow-read --allow-write --allow-env --allow-sys npm:prettier@3.9.6 --write --prose-wrap always --print-width 100 '**/*.md'
+format: md-format yaml-format ## Format the Markdown, the YAML and the checks' sources
 	@deno fmt test/*.ts
 	@cd $(CHECKS_WEB) && deno fmt
 
@@ -115,18 +97,3 @@ test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	@if out=$$(cd build/fetch/web && deno task build 2>&1); then echo "fetch: a site behind the workflows built" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'move xoa-web/'; then echo "$$out" >&2; exit 1; fi
 	@echo "fetch: OK"
-
-# $(call fetch,url,sha256): downloads url to $@.download and refuses it unless it matches sha256.
-define fetch
-	@mkdir -p $(BIN)
-	@curl -fsSL --proto '=https' --retry 3 -o $@.download '$(1)'
-	@echo '$(2)  $@.download' | sha256sum -c --quiet - || { rm -f $@.download; exit 1; }
-endef
-
-$(BIN)/shellcheck:
-	$(call fetch,https://github.com/koalaman/shellcheck/releases/download/v$(SHELLCHECK_VERSION)/shellcheck-v$(SHELLCHECK_VERSION).linux.$(SHELLCHECK_ARCH).tar.xz,$(SHELLCHECK_SHA256))
-	@tar -xJf $@.download -C $(BIN) --strip-components=1 shellcheck-v$(SHELLCHECK_VERSION)/shellcheck && rm $@.download
-
-$(BIN)/actionlint:
-	$(call fetch,https://github.com/rhysd/actionlint/releases/download/v$(ACTIONLINT_VERSION)/actionlint_$(ACTIONLINT_VERSION)_linux_$(ACTIONLINT_ARCH).tar.gz,$(ACTIONLINT_SHA256))
-	@tar -xzf $@.download -C $(BIN) actionlint && rm $@.download
