@@ -1,0 +1,49 @@
+# Publishes the draft that release-draft.yml keeps: its tag is made then, at the commit the draft names, and is never
+# rewritten. For a repository whose release is its source, as this one; one that builds binaries
+# or images publishes them in a workflow of its own. Run by hand in this repository, and called by a project by SHA
+# from a workflow_dispatch:
+#
+#   jobs:
+#     publish:
+#       permissions:
+#         contents: write
+#       uses: xoadev/xoa-base/.github/workflows/release.yml@<sha> # vX.Y.Z
+name: release
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag-prefix:
+        description: The tag's prefix of the draft to publish
+        type: string
+        default: v
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.repository }}-${{ inputs.tag-prefix || 'v' }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # publish the draft, which makes its tag
+    steps:
+      - name: Publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PREFIX: ${{ inputs.tag-prefix || 'v' }}
+        run: |
+          tag=$(gh release list --limit 100 --json tagName,isDraft \
+            --jq "[.[] | select(.isDraft and (.tagName | startswith(\"$PREFIX\")))][0].tagName // empty")
+          if [[ -z "$tag" ]]; then
+            echo "::error title=No draft::no draft release with the prefix $PREFIX: nothing has changed since the last one" >&2
+            exit 1
+          fi
+          gh release edit "$tag" --draft=false --latest
+          echo "published: $tag"

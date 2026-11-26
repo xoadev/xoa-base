@@ -76,6 +76,43 @@ async function proseFailures(src: string, dest: string): Promise<string[]> {
   return failures;
 }
 
+// This module's own commit, when the site imports it from GitHub (raw.githubusercontent.com/xoadev/xoa-base/<sha>/).
+const OWN_COMMIT = /\/xoadev\/xoa-base\/([0-9a-f]{40})\//.exec(import.meta.url)?.[1];
+const CALLED = /xoadev\/xoa-base\/\.github\/workflows\/[^@\s]+@([0-9a-f]{40})/g;
+
+// The commit the site imports this from is the one its repository's workflows call, which Dependabot moves: a deno.json
+// left behind fails here, saying where to move it.
+async function commitFailures(src: string): Promise<string[]> {
+  if (!OWN_COMMIT) return [];
+  let root = src;
+  while (!(await exists(`${root}/.git`))) {
+    const parent = root.replace(/\/[^/]+$/, "");
+    if (!parent || parent === root) return [];
+    root = parent;
+  }
+  const called = new Set<string>();
+  for await (const workflow of files(`${root}/.github/workflows`, [], ".yml")) {
+    for (const [, commit] of (await Deno.readTextFile(workflow)).matchAll(CALLED)) called.add(commit);
+  }
+  if (!called.size || (called.size === 1 && called.has(OWN_COMMIT))) return [];
+  return [
+    `deno.json: xoa-web/ is at xoa-base ${OWN_COMMIT}, but the workflows call ${
+      [...called].join(", ")
+    }: move xoa-web/ ` +
+    `to the workflows' commit (Dependabot moves only theirs)`,
+  ];
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await Deno.stat(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return false;
+    throw error;
+  }
+}
+
 export default function xoa() {
   return (site: Site) => {
     // A value as JSON inside a page: a `<` could close the script block.
@@ -87,6 +124,7 @@ export default function xoa() {
       const dest = site.dest().replace(/\/$/, "");
       const seo = await checkSeo(dest, site.options.location.href);
       const failures = [
+        ...(await commitFailures(src)),
         ...(await pagesFailures(dest)),
         ...(await stylesFailures(src, dest)),
         ...(await proseFailures(src, dest)),

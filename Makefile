@@ -97,13 +97,24 @@ test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	@rm -rf build/fetch && mkdir -p build/fetch && cp test/image/Dockerfile build/fetch/ && cp -r test/site build/fetch/web
 	@sed -i -e 's#"xoa-web/": "../../website/"#"xoa-web/": "https://raw.githubusercontent.com/xoadev/xoa-base/$(XOA_BASE_TEST)/website/"#' \
 	  -e 's#"frozen": true#"frozen": false#' build/fetch/web/deno.json && rm build/fetch/web/deno.lock
+	@git init -q build/fetch && mkdir -p build/fetch/.github/workflows && printf 'jobs:\n  image:\n    uses: xoadev/xoa-base/.github/workflows/image.yml@%s # vX.Y.Z\n' \
+	  $(XOA_BASE_TEST) > build/fetch/.github/workflows/image.yml
 	@printf 'IMAGE_DOCKERFILE := Dockerfile\n' > build/fetch/Makefile
 	@awk '/<!-- fetch -->/ { on = 1; next } on && /^```make/ { inside = 1; next } inside && /^```/ { exit } inside' README.md \
 	  | sed 's/<sha>/$(XOA_BASE_TEST)/' >> build/fetch/Makefile
 	@printf 'policy:\n\t@$$(IMAGE_SH) lint $$(IMAGE_DOCKERFILE)\n' >> build/fetch/Makefile
 	@$(MAKE) --no-print-directory -C build/fetch policy
 	@cd build/fetch/web && deno task build
-	@test -f build/fetch/.xoa-base/$(XOA_BASE_TEST)/.fetched && echo "fetch: OK"
+	@test -f build/fetch/.xoa-base/$(XOA_BASE_TEST)/.fetched
+	@# Two workflows calling xoa-base at two commits: make refuses to pick one.
+	@printf 'jobs:\n  web:\n    uses: xoadev/xoa-base/.github/workflows/web.yml@%s\n' $$(printf '0%.0s' $$(seq 40)) \
+	  > build/fetch/.github/workflows/web.yml
+	@if out=$$($(MAKE) --no-print-directory -C build/fetch policy 2>&1); then echo "fetch: two commits accepted" >&2; exit 1; \
+	elif ! echo "$$out" | grep -q 'one commit, in every uses: line'; then echo "$$out" >&2; exit 1; fi
+	@# The site imports xoa-base at a commit the workflows no longer call alone: its build says where to move it.
+	@if out=$$(cd build/fetch/web && deno task build 2>&1); then echo "fetch: a site behind the workflows built" >&2; exit 1; \
+	elif ! echo "$$out" | grep -q 'move xoa-web/'; then echo "$$out" >&2; exit 1; fi
+	@echo "fetch: OK"
 
 # $(call fetch,url,sha256): downloads url to $@.download and refuses it unless it matches sha256.
 define fetch

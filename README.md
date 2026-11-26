@@ -30,9 +30,10 @@ test: image-check
 <!-- fetch -->
 
 ```make
-# xoadev/xoa-base at this commit, the one the workflows call too. make fetches it into .xoa-base/
-# when it is missing or at another commit, and git checks it against the commit's hash.
-XOA_BASE := <sha>
+# xoadev/xoa-base at the commit the project's workflows call, which Dependabot moves: make reads it
+# from them, fetches it into .xoa-base/ when it is missing or at another commit, and git checks it.
+XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/workflows/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
+$(if $(filter 1,$(words $(XOA_BASE))),,$(error the workflows call xoa-base at "$(XOA_BASE)": one commit, in every uses: line))
 include .xoa-base/$(XOA_BASE)/container/image.mk
 .xoa-base/$(XOA_BASE)/%: .xoa-base/$(XOA_BASE)/.fetched ;
 .xoa-base/$(XOA_BASE)/.fetched:
