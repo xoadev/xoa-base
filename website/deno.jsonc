@@ -11,7 +11,7 @@
     "@std/http": "jsr:@std/http@1.1.0",
     "@std/jsonc": "jsr:@std/jsonc@1.0.3",
     "@axe-core/playwright": "npm:@axe-core/playwright@4.14.0",
-    "html-validate": "npm:html-validate@11.16.1",
+    "html-validate": "npm:html-validate@11.21.1",
     "playwright": "npm:playwright@1.64.1",
     "stylelint": "npm:stylelint@17.16.0",
     "stylelint-config-recommended": "npm:stylelint-config-recommended@18.0.0",
