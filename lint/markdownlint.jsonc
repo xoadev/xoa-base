@@ -1,0 +1,11 @@
+// markdownlint's rules for every repository: all of them, but the line length, which prettier owns (it wraps prose
+// at 100, and a table or a URL cannot be wrapped). A folder that needs another rule off says so in its own
+// .markdownlint.jsonc, with its reason, as a site's _content/ does for MD025.
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    // A Makefile's recipes need their tabs.
+    "MD010": { "ignore_code_languages": ["make", "makefile"] }
+  }
+}

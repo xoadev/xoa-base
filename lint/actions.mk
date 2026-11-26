@@ -5,5 +5,5 @@ include $(dir $(lastword $(MAKEFILE_LIST)))require.mk
 
 .PHONY: actions-lint
 actions-lint: ## actionlint over the workflows
-	$(call xoa-require,actionlint,1.7.0,go install github.com/rhysd/actionlint/cmd/actionlint@latest or https://github.com/rhysd/actionlint#install)
+	$(call xoa-require,actionlint,1.7.0,https://github.com/rhysd/actionlint#install)
 	@actionlint

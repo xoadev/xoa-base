@@ -1,8 +1,10 @@
 # AGENTS.md
 
-XOA's shared rules come with its agent plugin (`XOA_RULES` is `oss` in `.claude/settings.json`).
-What this repository is, how projects use it and how it is tested is in the [README](README.md);
-what follows is only what working on it adds.
+XOA's shared rules come with XOA's agent plugin, which XOA's people enable for themselves; this
+repository only picks their variant (`XOA_RULES` is `oss` in `.claude/settings.json`). Whoever
+contributes from outside works without them, with this file, the README and the checks. What this
+repository is, how projects use it and how it is tested is in the [README](README.md); what follows
+is only what working on it adds.
 
 ## This repository
 

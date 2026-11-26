@@ -91,10 +91,22 @@ async function commitFailures(src: string): Promise<string[]> {
     root = parent;
   }
   const called = new Set<string>();
-  for await (const workflow of files(`${root}/.github/workflows`, [], ".yml")) {
-    for (const [, commit] of (await Deno.readTextFile(workflow)).matchAll(CALLED)) called.add(commit);
+  const workflows = `${root}/.github/workflows`;
+  if (await exists(workflows)) {
+    for await (const entry of Deno.readDir(workflows)) {
+      if (!/\.ya?ml$/.test(entry.name)) continue;
+      for (const [, commit] of (await Deno.readTextFile(`${workflows}/${entry.name}`)).matchAll(CALLED)) {
+        called.add(commit);
+      }
+    }
   }
-  if (!called.size || (called.size === 1 && called.has(OWN_COMMIT))) return [];
+  if (!called.size) {
+    return [
+      `.github/workflows: no workflow calls xoa-base, whose commit the site's xoa-web/ must follow: add the one ` +
+      `website/README.md shows, calling web.yml@${OWN_COMMIT}`,
+    ];
+  }
+  if (called.size === 1 && called.has(OWN_COMMIT)) return [];
   return [
     `deno.json: xoa-web/ is at xoa-base ${OWN_COMMIT}, but the workflows call ${
       [...called].join(", ")

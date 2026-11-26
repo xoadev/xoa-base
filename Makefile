@@ -1,4 +1,4 @@
-# xoa-base — task runner. `make check` is what CI runs.
+# xoa-base — task runner. CI runs `make check` across its jobs (check.yml), plus test-fetch and test-image.
 .DEFAULT_GOAL := help
 # The generic linters, as a project includes them; container/image.mk below brings hadolint.
 include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk
@@ -83,7 +83,7 @@ test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	  $(XOA_BASE_TEST) > build/fetch/.github/workflows/image.yml
 	@printf 'IMAGE_DOCKERFILE := Dockerfile\n' > build/fetch/Makefile
 	@awk '/<!-- fetch -->/ { on = 1; next } on && /^```make/ { inside = 1; next } inside && /^```/ { exit } inside' README.md \
-	  | sed 's/<sha>/$(XOA_BASE_TEST)/' >> build/fetch/Makefile
+	  >> build/fetch/Makefile
 	@printf 'policy:\n\t@$$(IMAGE_SH) lint $$(IMAGE_DOCKERFILE)\n' >> build/fetch/Makefile
 	@$(MAKE) --no-print-directory -C build/fetch policy
 	@cd build/fetch/web && deno task build
@@ -93,6 +93,11 @@ test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	  > build/fetch/.github/workflows/web.yml
 	@if out=$$($(MAKE) --no-print-directory -C build/fetch policy 2>&1); then echo "fetch: two commits accepted" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'one commit, in every uses: line'; then echo "$$out" >&2; exit 1; fi
+	@# No workflow calls xoa-base yet: make says to add one first.
+	@mv build/fetch/.github/workflows build/fetch/.github/held
+	@if out=$$($(MAKE) --no-print-directory -C build/fetch policy 2>&1); then echo "fetch: no workflow accepted" >&2; exit 1; \
+	elif ! echo "$$out" | grep -q 'no workflow calls xoa-base yet'; then echo "$$out" >&2; exit 1; fi
+	@mv build/fetch/.github/held build/fetch/.github/workflows
 	@# The site imports xoa-base at a commit the workflows no longer call alone: its build says where to move it.
 	@if out=$$(cd build/fetch/web && deno task build 2>&1); then echo "fetch: a site behind the workflows built" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'move xoa-web/'; then echo "$$out" >&2; exit 1; fi

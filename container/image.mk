@@ -24,7 +24,7 @@ IMAGE_CHECK ?=
 IMAGE_BUILD_ARGS ?=
 IMAGE_STOP ?= 1
 IMAGE_MEMORY ?= 512m
-# image.sh is next to this file, fetched or copied.
+# image.sh is next to this file.
 IMAGE_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
 IMAGE_SH := $(IMAGE_HOME)tools/image.sh
 PLATFORMS ?= linux/$(subst aarch64,arm64,$(subst x86_64,amd64,$(shell uname -m)))

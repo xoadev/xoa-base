@@ -1,16 +1,17 @@
 # From github.com/xoadev/xoa-base (lint/markdown.mk): change it here. `make md-lint` checks the repository's Markdown,
-# MD_FILES (default: all of it but what .gitignore leaves out), with prettier, wrapped at 100 columns so a diff shows
-# the sentence that changed; `make md-format` applies it. Prettier runs through Deno.
-# Prettier's version is lint/deno.jsonc's, which Dependabot moves.
-PRETTIER_PACKAGE := $(shell sed -n 's/.*"\(npm:prettier@[^"]*\)".*/\1/p' $(dir $(lastword $(MAKEFILE_LIST)))deno.jsonc)
-PRETTIER := deno run --quiet --allow-read --allow-env --allow-sys $(PRETTIER_PACKAGE)
-PRETTIER_WRITE := deno run --quiet --allow-read --allow-write --allow-env --allow-sys $(PRETTIER_PACKAGE)
+# MD_FILES (default: all of it but what .gitignore leaves out): its layout with prettier, wrapped at 100 columns so a
+# diff shows the sentence that changed, and markdownlint's rules (lint/markdownlint.jsonc); `make md-format` applies
+# the layout. Both run through Deno at lint/deno.jsonc's versions.
+include $(dir $(lastword $(MAKEFILE_LIST)))prettier.mk
 MD_FILES ?= '**/*.md'
 MD_OPTIONS := --prose-wrap always --print-width 100
+MARKDOWNLINT := deno run --quiet --allow-read --allow-env --allow-sys \
+  $(shell sed -n 's/.*"\(npm:markdownlint-cli2@[^"]*\)".*/\1/p' $(XOA_LINT)deno.jsonc)
 
 .PHONY: md-lint md-format
-md-lint: ## The Markdown's layout
+md-lint: ## The Markdown's layout and markdownlint's rules
 	@$(PRETTIER) --check $(MD_OPTIONS) $(MD_FILES)
+	@$(MARKDOWNLINT) --config $(XOA_LINT)markdownlint.jsonc $(MD_FILES) '#**/node_modules' '#.xoa-base' '#build'
 
 md-format: ## Apply the Markdown's layout
 	@$(PRETTIER_WRITE) --write $(MD_OPTIONS) $(MD_FILES)

@@ -26,9 +26,16 @@ the plugin imports every module:
   fails a build whose `deno.json` is left behind). Lume comes from `deno.land/x`, which Dependabot
   does not read: it is moved by hand.
 
-The project's `Makefile` runs them through the two targets the CI's workflow calls: `web-check`
-(`cd <site> && deno fmt --check && deno lint && deno task build && deno task a11y`) and
-`web-browser` (`cd <site> && deno task browser`).
+The project's `Makefile` runs them through the two targets the CI's workflow calls, with the site's
+folder in `WEB`, which the workflow's `directory` input sets:
+
+```make
+WEB ?= web
+web-check: ## The site's sources, its build with the plugin's checks, and its accessibility
+	cd $(WEB) && deno fmt --check && deno lint && deno task build && deno task a11y
+web-browser: ## The accessibility check's browser, once per machine
+	cd $(WEB) && deno task browser
+```
 
 ## The site's prose
 

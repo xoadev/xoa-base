@@ -41,7 +41,7 @@ jobs:
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      - run: make lint test-image-policy test-fetch
+      - run: make lint test-content test-image-policy test-fetch
 
   web:
     # Editing the description re-runs the workflow for the title only.
