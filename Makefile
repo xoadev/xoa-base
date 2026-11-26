@@ -1,7 +1,7 @@
 # xoa-base — task runner. CI runs `make check` across its jobs (check.yml), plus test-fetch and test-image.
 .DEFAULT_GOAL := help
 # The generic linters, as a project includes them; container/image.mk below brings hadolint.
-include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk
+include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk lint/typos.mk
 
 # The website's checks are a Lume plugin and a script, which the test site imports as a project's site does: its
 # build runs them, and its a11y task the accessibility check. A copy in build/ is what gets built and broken.
@@ -23,7 +23,7 @@ include container/image.mk
 check: lint test ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
 
-lint: md-lint yaml-lint shell-lint actions-lint ## The Markdown, YAML, shell scripts and workflows, and the checks' sources
+lint: md-lint yaml-lint shell-lint actions-lint typos-lint ## The Markdown, YAML, shell scripts and workflows, and the checks' sources
 	@deno fmt --check test/*.ts
 	@deno lint test/*.ts
 	@cd $(CHECKS_WEB) && deno fmt --check && deno lint
