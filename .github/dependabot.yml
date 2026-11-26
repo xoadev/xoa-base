@@ -1,0 +1,39 @@
+# Same wait as the rule for every dependency: nothing younger than a week. A project takes the new versions when it
+# moves to a release of this repository.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: fix
+      include: scope
+
+  - package-ecosystem: docker
+    directories:
+      - /test/image
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # The checks' dependencies and prettier, in website/deno.jsonc and lint/deno.jsonc: the code that names them in full
+  # follows, or website/deps_test.ts fails saying what to write. Lume (deno.land/x) is not Dependabot's, and is moved
+  # by hand.
+  - package-ecosystem: deno
+    directories:
+      - /website
+      - /lint
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: fix
+      include: scope

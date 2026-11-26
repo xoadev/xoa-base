@@ -1,0 +1,29 @@
+# The pull request's title is a Conventional Commit: the squash makes it the commit on main, which convco reads for
+# the next version. A project calls it by SHA from its pull request workflow, `edited` included:
+#
+#   on:
+#     pull_request:
+#       types: [opened, edited, reopened, synchronize]
+#   jobs:
+#     title:
+#       uses: xoadev/xoa-base/.github/workflows/title.yml@<sha> # vX.Y.Z
+name: title
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: The title is a Conventional Commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|perf|test|build|ci|chore|style|revert)(\([a-z0-9/-]+\))?!?: [^ ]'
+          [[ "$TITLE" =~ $pattern ]] || { echo "::error title=PR title::'$TITLE' is not a Conventional Commit" >&2; exit 1; }

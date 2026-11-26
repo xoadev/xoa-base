@@ -1,0 +1,74 @@
+{{# The page around every page: head, header and footer. A page sets `id`, the key of its texts in `t`. #}}
+{{ set meta = t[it.id] }}
+{{ set translated = it.alternates && it.alternates.length > 1 }}
+<!doctype html>
+<html lang="{{ it.lang }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{# Nothing from another origin and nothing inline: the host may add what a <meta> cannot (frame-ancestors). #}}
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+    {{ if it.id == "notFound" }}<meta name="robots" content="noindex">{{ /if }}
+    <title>{{ meta.title }}</title>
+    <meta name="description" content="{{ meta.description }}">
+    <link rel="canonical" href="{{ url |> url(true) }}">
+    <meta name="theme-color" content="{{ theme }}">
+    {{# What a search engine or a shared link shows. #}}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ t.common.brand }}">
+    <meta property="og:locale" content="{{ languages[it.lang].locale }}">
+    {{ if translated }}
+    {{ for other of it.alternates }}
+    {{ if other.lang != it.lang }}<meta property="og:locale:alternate" content="{{ languages[other.lang].locale }}">{{ /if }}
+    {{ /for }}
+    {{ /if }}
+    <meta property="og:title" content="{{ meta.title }}">
+    <meta property="og:description" content="{{ meta.description }}">
+    <meta property="og:url" content="{{ url |> url(true) }}">
+    <meta property="og:image" content="{{ "/assets/og.png" |> url(true) }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ t.common.ogAlt }}">
+    <meta name="twitter:card" content="summary_large_image">
+    {{# Google shows a site's icon only from a square raster of 48 px or a multiple; the SVG is for browsers. #}}
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    {{# Who publishes the site, for search engines: a data block, which the CSP does not run. #}}
+    {{ set home = "/" |> url(true) }}
+    <script type="application/ld+json">{{ {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": t.common.brand,
+      "url": home,
+      "inLanguage": it.lang,
+      "publisher": organization,
+    } |> json }}</script>
+    <link rel="preload" href="/assets/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <a class="skip" href="#main">{{ t.common.skip }}</a>
+    <header>
+      <a class="brand" href="{{ t.common.home }}">{{ t.common.brand }}</a>
+      {{ if translated }}
+      <nav aria-label="{{ t.common.switcher }}">
+        <ul class="languages">
+          {{ for other of it.alternates }}
+          <li><a href="{{ other.url }}" lang="{{ other.lang }}" hreflang="{{ other.lang }}"
+            {{ if other.lang == it.lang }}aria-current="page"{{ /if }}>{{ languages[other.lang].name }}</a></li>
+          {{ /for }}
+        </ul>
+      </nav>
+      {{ /if }}
+    </header>
+    <main id="main">
+{{ content }}
+    </main>
+    <footer>
+      <p>{{ t.common.footer }}</p>
+    </footer>
+  </body>
+</html>

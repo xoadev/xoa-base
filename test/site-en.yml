@@ -1,0 +1,19 @@
+# The site's English copy: the same keys as es.yml, or the build fails.
+common:
+  home: /en/
+  brand: Example
+  nav: Main
+  ogAlt: "Example: a xoa.dev website"
+  switcher: Language
+  skip: Skip to content
+  footer: A project of <a href="https://xoa.dev">xoa.dev</a>, in A Coruña.
+index:
+  title: Example · a xoa.dev website
+  description: The home page of the test site of the xoa.dev website checks.
+  heading: An example website
+  lead: Lume, a hand-written stylesheet and nothing loaded from elsewhere.
+notFound:
+  title: Page not found
+  description: This page does not exist.
+  heading: This page does not exist
+  home: Back to the home page

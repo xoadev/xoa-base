@@ -1,0 +1,31 @@
+// The checks' own configuration, for their tests and lint here. A site does not read it: it imports the modules by URL
+// with its own deno.json, so they name their dependencies in full, and share only the site's Lume (`lume/`).
+{
+  "lock": {
+    "frozen": true
+  },
+  // The versions of the modules' dependencies, where Dependabot's deno ecosystem moves them. The modules name them in
+  // full, and deps_test.ts fails until they say the same versions as here.
+  "imports": {
+    "lume/": "https://deno.land/x/lume@v3.2.5/",
+    "@std/http": "jsr:@std/http@1.1.0",
+    "@std/jsonc": "jsr:@std/jsonc@1.0.3",
+    "@axe-core/playwright": "npm:@axe-core/playwright@4.14.0",
+    "html-validate": "npm:html-validate@11.16.1",
+    "playwright": "npm:playwright@1.64.1",
+    "stylelint": "npm:stylelint@17.16.0",
+    "stylelint-config-recommended": "npm:stylelint-config-recommended@18.0.0",
+    "stylelint-config-standard": "npm:stylelint-config-standard@40.0.0"
+  },
+  "fmt": {
+    "lineWidth": 120,
+    // The repository's Markdown is prettier's (make lint), which wraps it otherwise.
+    "exclude": ["node_modules/", "*.md"]
+  },
+  "lint": {
+    "exclude": ["node_modules/"],
+    // Inline npm: and jsr: specifiers on purpose: the site that imports these modules has no names for them.
+    "rules": { "exclude": ["no-import-prefix"] }
+  },
+  "nodeModulesDir": "auto"
+}

@@ -1,0 +1,7 @@
+// The versions of the linters that run through Deno, where Dependabot's deno ecosystem moves them.
+{
+  "imports": {
+    "markdownlint-cli2": "npm:markdownlint-cli2@0.24.0",
+    "prettier": "npm:prettier@3.9.6"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "lock": {
+    "frozen": true
+  },
+  "imports": {
+    "lume/": "https://deno.land/x/lume@v3.2.5/",
+    "xoa-web/": "../../website/"
+  },
+  "tasks": {
+    "lume": "echo \"import 'lume/cli.ts'\" | deno run -A -",
+    "build": "deno task lume",
+    "serve": "deno task lume -s",
+    "a11y": "echo \"import { a11y } from 'xoa-web/mod.ts'; await a11y()\" | deno run -A -",
+    "browser": "echo \"import { installBrowser } from 'xoa-web/mod.ts'; await installBrowser()\" | deno run -A -"
+  },
+  "compilerOptions": {
+    "types": [
+      "lume/types.ts"
+    ]
+  },
+  "fmt": {
+    "lineWidth": 120,
+    "exclude": [
+      "_site/",
+      "node_modules/"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      "_site/",
+      "node_modules/"
+    ]
+  },
+  "nodeModulesDir": "auto"
+}

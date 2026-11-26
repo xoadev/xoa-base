@@ -1,0 +1,65 @@
+# Every pull request and push to main: the checks run over the test site and image through the same reusable
+# workflows a project calls. A public repository: GitHub's runners only, never a self-hosted one a fork's pull request
+# could run on.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # An edit of the description runs the title only, in a group of its own, so it never cancels a full run.
+  group: check-${{ github.ref }}-${{ github.event.action == 'edited' && 'title' || 'all' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  title:
+    uses: ./.github/workflows/title.yml
+
+  lint:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+
+      # GitHub's runner brings shellcheck but not actionlint nor typos, which XOA's own runners have.
+      - name: actionlint and typos
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          curl -fsSL --proto '=https' -o "$RUNNER_TEMP/typos.tgz" \
+            https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz
+          echo "3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93  $RUNNER_TEMP/typos.tgz" | sha256sum -c --quiet
+          mkdir -p "$RUNNER_TEMP/bin" && tar -xzf "$RUNNER_TEMP/typos.tgz" -C "$RUNNER_TEMP/bin" ./typos
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - run: make lint test-content test-image-policy test-fetch
+
+  web:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
+    uses: ./.github/workflows/web.yml
+    with:
+      directory: test/site
+      target: test-web
+
+  image:
+    # Editing the description re-runs the workflow for the title only.
+    if: github.event.action != 'edited'
+    uses: ./.github/workflows/image.yml
+    with:
+      target: test-image
