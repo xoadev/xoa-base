@@ -16,7 +16,10 @@ the plugin imports every module:
 
 - Its `_config.ts` runs `site.use(xoa())`, imported from `xoa-web/mod.ts`. Every build then checks
   what it made (what, in `mod.ts`) and fails on any failure; while serving, it prints them. The
-  plugin also gives the pages the `json` filter for their JSON-LD.
+  plugin also gives the pages the `json` filter for their JSON-LD. A source the Content Security
+  Policy needs beyond `'self'` and exact HTTPS origins, which the check refuses otherwise, is
+  declared to it with its reason: `site.use(xoa({ csp: { "img-src": ["data:"] } }))`, for the blank
+  tiles a map library writes.
 - Its `_data.ts` reads the prose with `loadContent({ root, languages, defaultLanguage })` from
   `xoa-web/mod.ts`.
 - `deno task a11y` checks the built site in a browser, which `deno task browser` installs once.
