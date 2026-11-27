@@ -22,8 +22,9 @@ on:
       runs-on:
         description: >-
           The runner, as JSON (a label, or a list of labels). Empty: a private repository runs on its organization's
-          own runners, the JSON labels in its Actions variable SELF_HOSTED_DOCKER_RUNNER, or else SELF_HOSTED_RUNNER, with Docker, and anything else on GitHub's, since a
-          public repository's pull requests come from anyone.
+          own runners with Docker, the JSON labels in its Actions variable SELF_HOSTED_DOCKER_RUNNER, or else
+          SELF_HOSTED_RUNNER, and anything else on GitHub's, since a public repository's pull requests come from
+          anyone.
         type: string
         default: ""
 
@@ -32,7 +33,10 @@ permissions:
 
 jobs:
   check:
-    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || (github.event.repository.private && (vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER) && fromJSON(vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER) || 'ubuntu-latest') }}
+    runs-on: >-
+      ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on)
+        || (github.event.repository.private && (vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER)
+          && fromJSON(vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER) || 'ubuntu-latest') }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,8 +54,11 @@ jobs:
       - name: hadolint
         run: |
           if ! command -v hadolint > /dev/null; then
-            container=$(docker create hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d) # v2.15.1
-            mkdir -p "$RUNNER_TEMP/bin" && docker cp "$container:/bin/hadolint" "$RUNNER_TEMP/bin/hadolint" && docker rm "$container"
+            # v2.15.1
+            container=$(docker create \
+              hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d)
+            mkdir -p "$RUNNER_TEMP/bin"
+            docker cp "$container:/bin/hadolint" "$RUNNER_TEMP/bin/hadolint" && docker rm "$container"
             echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
           fi
 

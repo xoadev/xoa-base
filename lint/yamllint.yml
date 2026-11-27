@@ -1,0 +1,14 @@
+# From github.com/xoadev/xoa-base (lint/yamllint.yml): yamllint's rules for lint/yaml.mk. The layout is prettier's,
+# so what prettier decides is off here.
+extends: default
+
+rules:
+  # prettier writes no `---`, and GitHub Actions' `on:` is a key, not a boolean.
+  document-start: disable
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  # prettier leaves long strings and URLs as they are.
+  line-length:
+    max: 120

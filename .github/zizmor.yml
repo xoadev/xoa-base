@@ -1,0 +1,5 @@
+# zizmor's audits for this repository's workflows (lint/actions.mk).
+rules:
+  # `uses: ./` is this checkout's own reusable workflow or action, the code under test; `$/` would add nothing.
+  self-repository:
+    disable: true

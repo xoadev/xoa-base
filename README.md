@@ -8,6 +8,7 @@ credentials.
 | `website/`   | A static Lume site; what it checks, in `website/mod.ts` and `a11y.ts`     |
 | `container/` | A container image; what it checks, in `container/image.mk` and `image.sh` |
 | `lint/`      | The linters any repository may need, one `.mk` each                       |
+| `base.mk`    | What every Makefile shares: bash with pipefail and `make help`            |
 
 ## Using it in a project
 
@@ -15,9 +16,10 @@ A project names one commit of this repository and never edits what it takes from
 here, and the project moves to the new commit. Until this repository's first release that commit is
 one of `main`; from then on it is a release's.
 
-**The CI names the commit**, in the `uses:` lines of the workflows that call this repository's, with
-its version beside it, which Dependabot's `github-actions` ecosystem moves, with the same week's
-cooldown as everything else. For an image, `.github/workflows/image.yml`:
+**The CI names the commit**, in the `uses:` lines of the workflows that call this repository's
+workflows or actions, with its version beside it, which Dependabot's `github-actions` ecosystem
+moves, with the same week's cooldown as everything else. For an image,
+`.github/workflows/image.yml`:
 
 ```yaml
 name: image
@@ -34,16 +36,18 @@ jobs:
 ```
 
 **The `Makefile` reads that commit** from the workflows, fetches this repository at it into
-`.xoa-base/`, which the project's `.gitignore` lists, and includes the areas it uses:
+`.xoa-base/`, which the project's `.gitignore` lists, and includes `base.mk` first and then the
+areas it uses:
 
 <!-- fetch -->
 
 ```make
 # xoadev/xoa-base at the commit the project's workflows call, which Dependabot moves: make reads it
 # from them, fetches it into .xoa-base/ when it is missing or at another commit, and git checks it.
-XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/workflows/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
+XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
 $(if $(XOA_BASE),,$(error no workflow calls xoa-base yet: add the one its README shows first))
 $(if $(filter 1,$(words $(XOA_BASE))),,$(error the workflows call xoa-base at $(XOA_BASE): one commit, in every uses: line))
+include .xoa-base/$(XOA_BASE)/base.mk
 include .xoa-base/$(XOA_BASE)/container/image.mk
 .xoa-base/$(XOA_BASE)/%: .xoa-base/$(XOA_BASE)/.fetched ;
 .xoa-base/$(XOA_BASE)/.fetched:
@@ -70,8 +74,11 @@ rather than under emulation: two jobs, one with `platforms: linux/arm64` and
 **`lint/`**: the project includes the linters it needs the same way
 (`include .xoa-base/$(XOA_BASE)/lint/markdown.mk`, and so on) and puts their targets in its `lint`.
 Each says in its first lines what it checks and how. The tools come with the machine, never with
-`make`: they belong in the images of XOA's runners and agent (by-fros/cloud), anywhere else they are
-installed by hand, and a `.mk` fails saying which one is missing or too old.
+`make`: they belong in the images of XOA's runners and agent (by-fros/cloud), a public repository's
+job on GitHub's runners installs them with `uses: xoadev/xoa-base/.github/actions/linters@<sha>`
+after `actions/setup-go`, anywhere else they are installed by hand, and a `.mk` fails saying which
+one is missing or too old. `editorconfig.mk` checks the project's own `.editorconfig`, which
+`shell.mk`'s shfmt also follows.
 
 **`website/`** is a Lume plugin the site imports by the same commit, and `website/web.mk` its
 targets, included like the others: how, and the format of the site's prose it reads, in
@@ -92,5 +99,5 @@ come from anyone. The `runs-on` input overrides all of this.
 ## Development
 
 `make help` lists the targets and what each checks; CI runs `make check` across its jobs, plus
-`test-fetch` and `test-image`. Beyond Deno, `make test-image` needs Docker with buildx and QEMU, and
-`make test-fetch` needs this commit on GitHub (`XOA_BASE_TEST=<sha>` for another).
+`fetch-test` and `image-test`. Beyond Deno, `make image-test` needs Docker with buildx and QEMU, and
+`make fetch-test` needs this commit on GitHub (`XOA_BASE_TEST=<sha>` for another).

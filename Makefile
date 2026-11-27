@@ -1,12 +1,12 @@
-# xoa-base — task runner. CI runs `make check` across its jobs (check.yml), plus test-fetch and test-image.
-.DEFAULT_GOAL := help
+# xoa-base — task runner. CI runs `make check` across its jobs (check.yml), plus fetch-test and image-test.
+include base.mk
 # The generic linters, as a project includes them; container/image.mk below brings hadolint.
-include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk lint/typos.mk
+include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk lint/typos.mk lint/editorconfig.mk
 
 # The website's checks are a Lume plugin and a script, which the test site imports as a project's site does: its
 # build runs them, and its a11y task the accessibility check. A copy in build/ is what gets built and broken.
 CHECKS_WEB := website
-# A project's targets, over the test site; test-web runs its web-check over the copies in build/.
+# A project's targets, over the test site; web-test runs its web-check over the copies in build/.
 WEB := test/site
 include website/web.mk
 
@@ -19,27 +19,27 @@ IMAGE_CONTEXT := test/image
 IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && busybox cat /data/probe')" = ok
 include container/image.mk
 
-.PHONY: check lint test format test-content test-fetch test-web test-rejections test-image-policy test-image help
+.PHONY: check lint test format content-test fetch-test web-test image-policy-test image-test
 
 check: lint test ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
 
-lint: md-lint yaml-lint shell-lint actions-lint typos-lint ## The Markdown, YAML, shell scripts and workflows, and the checks' sources
+lint: md-lint yaml-lint shell-lint actions-lint typos-lint editorconfig-lint ## The Markdown, YAML, shell scripts and workflows, and the checks' sources
 	@deno fmt --check test/*.ts
 	@deno lint test/*.ts
 	@cd $(CHECKS_WEB) && deno fmt --check && deno lint
 
-format: md-format yaml-format ## Format the Markdown, the YAML and the checks' sources
+format: md-format yaml-format shell-format ## Format the Markdown, the YAML and the checks' sources
 	@deno fmt test/*.ts
 	@cd $(CHECKS_WEB) && deno fmt
 
-test: test-content test-web test-image-policy ## The website's checks over the test site, and the image policy over the test Dockerfiles
+test: content-test web-test image-policy-test ## The website's checks over the test site, and the image policy over the test Dockerfiles
 
 # The test site is monolingual; the bilingual one is the same with test/site-en.yml added and its home translated.
-test-content: ## The tests of content.ts (pages, sections, items, collections, languages) and of the modules' pinned versions
+content-test: ## The tests of content.ts (pages, sections, items, collections, languages) and of the modules' pinned versions
 	@cd $(CHECKS_WEB) && deno test --allow-read --allow-write content_test.ts deps_test.ts
 
-test-web: ## The website's checks over the test site, monolingual and bilingual, and what must fail
+web-test: ## The website's checks over the test site, monolingual and bilingual, and what must fail
 	@rm -rf build && mkdir build && cp -r test/site build/site
 	@$(MAKE) --no-print-directory web-check WEB=build/site
 	@cp -r build/site build/bilingual && rm -rf build/bilingual/_site && cp test/site-en.yml build/bilingual/_texts/en.yml
@@ -47,19 +47,17 @@ test-web: ## The website's checks over the test site, monolingual and bilingual,
 	@cd build/bilingual && deno fmt _languages.ts
 	@sed -i 's/^id: index$$/id: index\nlang: [es, en]/' build/bilingual/index.vto
 	@$(MAKE) --no-print-directory web-check WEB=build/bilingual
-	@$(MAKE) --no-print-directory test-rejections
-
-test-rejections: ## Broken output must fail the installed SEO and policy checks (after make test-web)
+	@# Broken output must fail the installed SEO and policy checks.
 	@deno run --allow-read --allow-write=build --allow-run test/rejections.ts
 
-test-image-policy: ## The image policy passes the test image and test/image/accepted, and refuses each of test/image/rejected
+image-policy-test: ## The image policy passes the test image and test/image/accepted, and refuses each of test/image/rejected
 	@$(IMAGE_SH) lint $(IMAGE_DOCKERFILE) test/image/accepted/*.Dockerfile
 	@for dockerfile in test/image/rejected/*.Dockerfile; do \
 	  if $(IMAGE_SH) lint "$$dockerfile" 2>/dev/null; then echo "image policy: $$dockerfile should fail" >&2; exit 1; fi; \
 	done; echo "image policy: OK"
 
 # The same image with a server that ignores SIGTERM must be refused, and for that reason.
-test-image: ## The image's lint and check over the test image, for both architectures. Needs Docker
+image-test: ## The image's lint and check over the test image, for both architectures. Needs Docker
 	@$(MAKE) --no-print-directory image-lint image-check PLATFORMS=linux/amd64,linux/arm64
 	@$(MAKE) --no-print-directory image-oci OCI=build/image.tar PLATFORMS=linux/amd64,linux/arm64
 	@tar -xOf build/image.tar index.json | grep -q '"mediaType"' || { echo "image oci: no OCI index in the archive" >&2; exit 1; }
@@ -68,12 +66,9 @@ test-image: ## The image's lint and check over the test image, for both architec
 	elif ! echo "$$out" | grep -q 'it ignores SIGTERM'; then echo "$$out"; echo "image check: failed for another reason" >&2; exit 1; fi
 	@echo "image check: OK"
 
-help:
-	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-17s %s\n", $$1, $$2}'
-
 # The snippet is the README's, as a project copies it, so what is documented is what is tested.
 XOA_BASE_TEST ?= $(shell git rev-parse HEAD)
-test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README says: image policy fetched, site's plugin imported
+fetch-test: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README says: image policy fetched, site's plugin imported
 	@rm -rf build/fetch && mkdir -p build/fetch && cp test/image/Dockerfile build/fetch/ && cp -r test/site build/fetch/web
 	@sed -i -e 's#"xoa-web/": "../../website/"#"xoa-web/": "https://raw.githubusercontent.com/xoadev/xoa-base/$(XOA_BASE_TEST)/website/"#' \
 	  -e 's#"frozen": true#"frozen": false#' build/fetch/web/deno.json && rm build/fetch/web/deno.lock
@@ -84,11 +79,12 @@ test-fetch: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	  >> build/fetch/Makefile
 	@printf 'policy:\n\t@$$(IMAGE_SH) lint $$(IMAGE_DOCKERFILE)\n' >> build/fetch/Makefile
 	@$(MAKE) --no-print-directory -C build/fetch policy
+	@$(MAKE) --no-print-directory -C build/fetch | grep -q '^  image-lint ' || { echo "fetch: make help lists no image-lint" >&2; exit 1; }
 	@cd build/fetch/web && deno task build
 	@test -f build/fetch/.xoa-base/$(XOA_BASE_TEST)/.fetched
-	@# Two workflows calling xoa-base at two commits: make refuses to pick one.
-	@printf 'jobs:\n  web:\n    uses: xoadev/xoa-base/.github/workflows/web.yml@%s\n' $$(printf '0%.0s' $$(seq 40)) \
-	  > build/fetch/.github/workflows/web.yml
+	@# A workflow using xoa-base's linters action at another commit: make refuses to pick one.
+	@printf 'jobs:\n  lint:\n    steps:\n      - uses: xoadev/xoa-base/.github/actions/linters@%s\n' $$(printf '0%.0s' $$(seq 40)) \
+	  > build/fetch/.github/workflows/lint.yml
 	@if out=$$($(MAKE) --no-print-directory -C build/fetch policy 2>&1); then echo "fetch: two commits accepted" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'one commit, in every uses: line'; then echo "$$out" >&2; exit 1; fi
 	@# No workflow calls xoa-base yet: make says to add one first.

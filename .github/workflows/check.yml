@@ -36,18 +36,15 @@ jobs:
         with:
           deno-version: v2.9.7
 
-      # GitHub's runner brings shellcheck but not actionlint nor typos, which XOA's own runners have.
-      - name: actionlint and typos
-        run: |
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-          curl -fsSL --proto '=https' -o "$RUNNER_TEMP/typos.tgz" \
-            https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz
-          echo "3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93  $RUNNER_TEMP/typos.tgz" | sha256sum -c --quiet
-          mkdir -p "$RUNNER_TEMP/bin" && tar -xzf "$RUNNER_TEMP/typos.tgz" -C "$RUNNER_TEMP/bin" ./typos
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.2
+          cache: false
 
-      - run: make lint test-content test-image-policy test-fetch
+      # GitHub's runner brings shellcheck only; this repository's own action, as a public project calls it by SHA.
+      - uses: ./.github/actions/linters
+
+      - run: make lint content-test image-policy-test fetch-test
 
   web:
     # Editing the description re-runs the workflow for the title only.
@@ -55,11 +52,11 @@ jobs:
     uses: ./.github/workflows/web.yml
     with:
       directory: test/site
-      target: test-web
+      target: web-test
 
   image:
     # Editing the description re-runs the workflow for the title only.
     if: github.event.action != 'edited'
     uses: ./.github/workflows/image.yml
     with:
-      target: test-image
+      target: image-test

@@ -26,4 +26,7 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
           pattern='^(feat|fix|docs|refactor|perf|test|build|ci|chore|style|revert)(\([a-z0-9/-]+\))?!?: [^ ]'
-          [[ "$TITLE" =~ $pattern ]] || { echo "::error title=PR title::'$TITLE' is not a Conventional Commit" >&2; exit 1; }
+          if ! [[ "$TITLE" =~ $pattern ]]; then
+            echo "::error title=PR title::'$TITLE' is not a Conventional Commit" >&2
+            exit 1
+          fi

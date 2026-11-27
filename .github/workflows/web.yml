@@ -4,9 +4,9 @@
 #     web:
 #       uses: xoadev/xoa-base/.github/workflows/web.yml@<sha> # vX.Y.Z
 #
-# It runs the project's `make web-browser` and `make web-check`, from website/web.mk: its site imports this repository's Lume plugin by
-# the same commit, so its build runs the checks, and its a11y task the accessibility check. Deploying the site is the
-# project's own workflow, which takes the pages its build makes.
+# It runs the project's `make web-browser` and `make web-check`, from website/web.mk: its site imports this
+# repository's Lume plugin by the same commit, so its build runs the checks, and its a11y task the accessibility check.
+# Deploying the site is the project's own workflow, which takes the pages its build makes.
 name: web
 
 on:
@@ -23,8 +23,8 @@ on:
       runs-on:
         description: >-
           The runner, as JSON (a label, or a list of labels). Empty: a private repository runs on its organization's
-          own runners, the JSON labels in its Actions variable SELF_HOSTED_RUNNER, and anything else on GitHub's, since a
-          public repository's pull requests come from anyone.
+          own runners, the JSON labels in its Actions variable SELF_HOSTED_RUNNER, and anything else on GitHub's,
+          since a public repository's pull requests come from anyone.
         type: string
         default: ""
 
@@ -33,7 +33,10 @@ permissions:
 
 jobs:
   check:
-    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || (github.event.repository.private && (vars.SELF_HOSTED_RUNNER) && fromJSON(vars.SELF_HOSTED_RUNNER) || 'ubuntu-latest') }}
+    runs-on: >-
+      ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on)
+        || (github.event.repository.private && (vars.SELF_HOSTED_RUNNER) && fromJSON(vars.SELF_HOSTED_RUNNER)
+          || 'ubuntu-latest') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

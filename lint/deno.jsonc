@@ -1,5 +1,9 @@
-// The versions of the linters that run through Deno, where Dependabot's deno ecosystem moves them.
+// The versions of the linters that run through Deno, where Dependabot's deno ecosystem moves them, and deno.lock
+// next to it, with every package's integrity, which a run refuses to differ from.
 {
+  "lock": {
+    "frozen": true
+  },
   "imports": {
     "markdownlint-cli2": "npm:markdownlint-cli2@0.24.0",
     "prettier": "npm:prettier@3.9.6"
