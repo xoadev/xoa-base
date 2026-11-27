@@ -12,6 +12,12 @@ const seo = [
 ];
 const cases: [string, string, (text: string) => string, string][] = [
   [
+    "CSP source not declared",
+    "index.html",
+    (s) => s.replace("img-src 'self'", "img-src 'self' data:"),
+    "another source goes in the plugin's csp option",
+  ],
+  [
     "404 indexable",
     "404.html",
     (s) => s.replace('content="noindex"', 'content="index"'),
@@ -112,6 +118,32 @@ for (const [name, file, mutate, expected] of cases) {
     console.log(`rejection: ${name} OK`);
   } finally {
     await Deno.writeTextFile(path, original);
+  }
+}
+// The same source, declared in the plugin's csp option, passes.
+{
+  const page = `${root}/_site/index.html`;
+  const original = await Deno.readTextFile(page);
+  try {
+    await Deno.writeTextFile(
+      page,
+      original.replace("img-src 'self'", "img-src 'self' data:"),
+    );
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: [...seo, JSON.stringify({ "img-src": ["data:"] })],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    if (!result.success) {
+      throw new Error(
+        `a declared CSP source was refused: ${
+          new TextDecoder().decode(result.stderr)
+        }`,
+      );
+    }
+    console.log("rejection: declared CSP source accepted OK");
+  } finally {
+    await Deno.writeTextFile(page, original);
   }
 }
 for (const file of ["favicon-96.png", "404.html"]) {

@@ -5,8 +5,13 @@
 // source inside the site points to a file that does not exist. The plugin (mod.ts) runs it after every build.
 import { DOMParser } from "lume/deps/dom.ts";
 
-// `root` is the built site's folder, `SITE` its published origin.
-export async function checkSeo(root: string, SITE: string): Promise<{ failures: string[]; pages: number }> {
+// `root` is the built site's folder, `SITE` its published origin, and `cspAllowed` the sources, per directive, the
+// site allows beyond 'self' and exact HTTPS origins (the plugin's `csp` option).
+export async function checkSeo(
+  root: string,
+  SITE: string,
+  cspAllowed: Record<string, string[]> = {},
+): Promise<{ failures: string[]; pages: number }> {
   const ROOT = root;
   const origin = new URL(SITE).origin;
   function sameOrigin(value: string): boolean {
@@ -101,14 +106,20 @@ export async function checkSeo(root: string, SITE: string): Promise<{ failures: 
       const values = directives.get(name) ?? [];
       if (
         !values.includes("'self'") || values.some((value) => {
-          if (value === "'self'") return false;
+          if (value === "'self'" || cspAllowed[name]?.includes(value)) return false;
           try {
             return new URL(value).origin !== value || !value.startsWith("https://") || value.includes("*");
           } catch {
             return true;
           }
         })
-      ) fail(path, `CSP ${name} requires 'self' and only exact HTTPS origins as exceptions`);
+      ) {
+        fail(
+          path,
+          `CSP ${name} requires 'self' and only exact HTTPS origins as exceptions; another source goes in the ` +
+            `plugin's csp option, with its reason`,
+        );
+      }
     }
     if (!doc.querySelector('script[type="application/ld+json"]')) fail(path, "no JSON-LD");
     for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
@@ -178,8 +189,8 @@ export async function checkSeo(root: string, SITE: string): Promise<{ failures: 
 
 // For the checks' own tests: `deno run -A seo.ts <built site> <SITE>`.
 if (import.meta.main) {
-  const [root, site] = Deno.args;
-  const { failures, pages } = await checkSeo(root, site);
+  const [root, site, allowed] = Deno.args;
+  const { failures, pages } = await checkSeo(root, site, allowed ? JSON.parse(allowed) : {});
   if (failures.length) {
     console.error(failures.join("\n"));
     Deno.exit(1);

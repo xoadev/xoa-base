@@ -16,7 +16,12 @@ export { a11y, installBrowser } from "./a11y.ts";
 
 const html = new HtmlValidate({
   extends: ["html-validate:recommended", "html-validate:a11y"],
-  rules: { "attribute-empty-style": "off", "no-trailing-whitespace": "off" },
+  rules: {
+    "attribute-empty-style": "off",
+    "no-trailing-whitespace": "off",
+    // Lume writes a boolean attribute empty (required=""), so that is the style a page is held to.
+    "attribute-boolean-style": ["error", { style: "empty" }],
+  },
 });
 // stylelint-config-standard extends stylelint-config-recommended by name, which Deno cannot resolve: both, flattened.
 const css = { rules: { ...recommended.rules, ...standard.rules } };
@@ -125,7 +130,14 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-export default function xoa() {
+export interface Options {
+  // Sources a directive of the Content Security Policy allows beyond 'self' and exact HTTPS origins, which the check
+  // refuses otherwise: each one written in the site's _config.ts with the reason it cannot be avoided
+  // (`{ "img-src": ["data:"] }` for the blank tiles a map library writes).
+  csp?: Record<string, string[]>;
+}
+
+export default function xoa(options: Options = {}) {
   return (site: Site) => {
     // A value as JSON inside a page: a `<` could close the script block.
     site.filter("json", (value: unknown) => JSON.stringify(value).replaceAll("<", "\\u003c"));
@@ -134,7 +146,7 @@ export default function xoa() {
       // Both without a trailing slash, so the built site is found and skipped among the sources.
       const src = site.src().replace(/\/$/, "");
       const dest = site.dest().replace(/\/$/, "");
-      const seo = await checkSeo(dest, site.options.location.href);
+      const seo = await checkSeo(dest, site.options.location.href, options.csp);
       const failures = [
         ...(await commitFailures(src)),
         ...(await pagesFailures(dest)),
