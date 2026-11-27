@@ -73,8 +73,9 @@ Each says in its first lines what it checks and how. The tools come with the mac
 `make`: they belong in the images of XOA's runners and agent (by-fros/cloud), anywhere else they are
 installed by hand, and a `.mk` fails saying which one is missing or too old.
 
-**`website/`** is a Lume plugin the site imports by the same commit, with nothing fetched by `make`:
-how, and the format of the site's prose it reads, in [`website/README.md`](website/README.md).
+**`website/`** is a Lume plugin the site imports by the same commit, and `website/web.mk` its
+targets, included like the others: how, and the format of the site's prose it reads, in
+[`website/README.md`](website/README.md).
 
 **Releases** are this repository's own workflows too. `release-draft.yml` rewrites, on every push to
 `main`, the draft of the next version that convco reads in the Conventional Commits; `release.yml`,

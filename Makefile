@@ -6,8 +6,9 @@ include lint/markdown.mk lint/yaml.mk lint/shell.mk lint/actions.mk lint/typos.m
 # The website's checks are a Lume plugin and a script, which the test site imports as a project's site does: its
 # build runs them, and its a11y task the accessibility check. A copy in build/ is what gets built and broken.
 CHECKS_WEB := website
-# $(call site-check,folder): what a project's web-check does, over a site's folder.
-site-check = cd $(1) && deno fmt --check && deno lint && deno task build && deno task a11y
+# A project's targets, over the test site; test-web runs its web-check over the copies in build/.
+WEB := test/site
+include website/web.mk
 
 # The container image's checks run, with the targets a project gets, over the test image of test/image. Those of
 # test/image/rejected each break one rule, and the policy must refuse every one.
@@ -18,7 +19,7 @@ IMAGE_CONTEXT := test/image
 IMAGE_CHECK = test "$$($$IMAGE_RUN "$$IMAGE" sh -c 'echo ok > /data/probe && busybox cat /data/probe')" = ok
 include container/image.mk
 
-.PHONY: check lint test format web-browser test-content test-fetch test-web test-rejections test-image-policy test-image help
+.PHONY: check lint test format test-content test-fetch test-web test-rejections test-image-policy test-image help
 
 check: lint test ## Everything CI runs but the image check, which needs Docker
 	@echo "check: OK"
@@ -35,20 +36,17 @@ format: md-format yaml-format ## Format the Markdown, the YAML and the checks' s
 test: test-content test-web test-image-policy ## The website's checks over the test site, and the image policy over the test Dockerfiles
 
 # The test site is monolingual; the bilingual one is the same with test/site-en.yml added and its home translated.
-web-browser: ## The headless Chromium the accessibility check drives (once per machine), as a project's target
-	@cd test/site && deno task browser
-
 test-content: ## The tests of content.ts (pages, sections, items, collections, languages) and of the modules' pinned versions
 	@cd $(CHECKS_WEB) && deno test --allow-read --allow-write content_test.ts deps_test.ts
 
 test-web: ## The website's checks over the test site, monolingual and bilingual, and what must fail
 	@rm -rf build && mkdir build && cp -r test/site build/site
-	@$(call site-check,build/site)
+	@$(MAKE) --no-print-directory web-check WEB=build/site
 	@cp -r build/site build/bilingual && rm -rf build/bilingual/_site && cp test/site-en.yml build/bilingual/_texts/en.yml
 	@printf '%s\n' 'export const DEFAULT_LANGUAGE = "es";' 'export const LANGUAGES = { es: { name: "Español", locale: "es_ES" }, en: { name: "English", locale: "en_US" } };' > build/bilingual/_languages.ts
 	@cd build/bilingual && deno fmt _languages.ts
 	@sed -i 's/^id: index$$/id: index\nlang: [es, en]/' build/bilingual/index.vto
-	@$(call site-check,build/bilingual)
+	@$(MAKE) --no-print-directory web-check WEB=build/bilingual
 	@$(MAKE) --no-print-directory test-rejections
 
 test-rejections: ## Broken output must fail the installed SEO and policy checks (after make test-web)

@@ -54,6 +54,7 @@ async function pagesFailures(dest: string): Promise<string[]> {
 async function stylesFailures(src: string, dest: string): Promise<string[]> {
   const sheets = await Array.fromAsync(files(src, [dest], ".css"));
   if (!sheets.length) return [];
+  // Stylelint reads the site's .stylelintignore (deno task runs in the site's folder): a library's stylesheet goes there.
   const { results } = await stylelint.lint({ files: sheets, config: css });
   return results.flatMap(({ source, warnings }) =>
     warnings.map(({ line, text }) => `${source?.slice(src.length)}:${line}: ${text}`)
