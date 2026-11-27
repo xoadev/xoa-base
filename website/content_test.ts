@@ -1,4 +1,4 @@
-// The tests of content.ts (make test-content): on pages and collections written here, in a folder of their own.
+// The tests of content.ts (make content-test): on pages and collections written here, in a folder of their own.
 import { content, page, sections, type Tree, validate } from "./content.ts";
 const DEFAULT_LANGUAGE = "es";
 

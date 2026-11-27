@@ -8,6 +8,7 @@ credentials.
 | `website/`   | A static Lume site; what it checks, in `website/mod.ts` and `a11y.ts`     |
 | `container/` | A container image; what it checks, in `container/image.mk` and `image.sh` |
 | `lint/`      | The linters any repository may need, one `.mk` each                       |
+| `base.mk`    | What every Makefile shares: bash with pipefail and `make help`            |
 
 ## Using it in a project
 
@@ -34,7 +35,8 @@ jobs:
 ```
 
 **The `Makefile` reads that commit** from the workflows, fetches this repository at it into
-`.xoa-base/`, which the project's `.gitignore` lists, and includes the areas it uses:
+`.xoa-base/`, which the project's `.gitignore` lists, and includes `base.mk` first and then the
+areas it uses:
 
 <!-- fetch -->
 
@@ -44,6 +46,7 @@ jobs:
 XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/workflows/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
 $(if $(XOA_BASE),,$(error no workflow calls xoa-base yet: add the one its README shows first))
 $(if $(filter 1,$(words $(XOA_BASE))),,$(error the workflows call xoa-base at $(XOA_BASE): one commit, in every uses: line))
+include .xoa-base/$(XOA_BASE)/base.mk
 include .xoa-base/$(XOA_BASE)/container/image.mk
 .xoa-base/$(XOA_BASE)/%: .xoa-base/$(XOA_BASE)/.fetched ;
 .xoa-base/$(XOA_BASE)/.fetched:
@@ -95,5 +98,5 @@ come from anyone. The `runs-on` input overrides all of this.
 ## Development
 
 `make help` lists the targets and what each checks; CI runs `make check` across its jobs, plus
-`test-fetch` and `test-image`. Beyond Deno, `make test-image` needs Docker with buildx and QEMU, and
-`make test-fetch` needs this commit on GitHub (`XOA_BASE_TEST=<sha>` for another).
+`fetch-test` and `image-test`. Beyond Deno, `make image-test` needs Docker with buildx and QEMU, and
+`make fetch-test` needs this commit on GitHub (`XOA_BASE_TEST=<sha>` for another).

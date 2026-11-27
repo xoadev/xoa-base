@@ -44,7 +44,7 @@ jobs:
       # GitHub's runner brings shellcheck only; this repository's own action, as a public project calls it by SHA.
       - uses: ./.github/actions/linters
 
-      - run: make lint test-content test-image-policy test-fetch
+      - run: make lint content-test image-policy-test fetch-test
 
   web:
     # Editing the description re-runs the workflow for the title only.
@@ -52,11 +52,11 @@ jobs:
     uses: ./.github/workflows/web.yml
     with:
       directory: test/site
-      target: test-web
+      target: web-test
 
   image:
     # Editing the description re-runs the workflow for the title only.
     if: github.event.action != 'edited'
     uses: ./.github/workflows/image.yml
     with:
-      target: test-image
+      target: image-test
