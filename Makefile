@@ -82,9 +82,9 @@ fetch-test: ## A scratch project takes xoa-base at XOA_BASE_TEST as the README s
 	@$(MAKE) --no-print-directory -C build/fetch | grep -q '^  image-lint ' || { echo "fetch: make help lists no image-lint" >&2; exit 1; }
 	@cd build/fetch/web && deno task build
 	@test -f build/fetch/.xoa-base/$(XOA_BASE_TEST)/.fetched
-	@# Two workflows calling xoa-base at two commits: make refuses to pick one.
-	@printf 'jobs:\n  web:\n    uses: xoadev/xoa-base/.github/workflows/web.yml@%s\n' $$(printf '0%.0s' $$(seq 40)) \
-	  > build/fetch/.github/workflows/web.yml
+	@# A workflow using xoa-base's linters action at another commit: make refuses to pick one.
+	@printf 'jobs:\n  lint:\n    steps:\n      - uses: xoadev/xoa-base/.github/actions/linters@%s\n' $$(printf '0%.0s' $$(seq 40)) \
+	  > build/fetch/.github/workflows/lint.yml
 	@if out=$$($(MAKE) --no-print-directory -C build/fetch policy 2>&1); then echo "fetch: two commits accepted" >&2; exit 1; \
 	elif ! echo "$$out" | grep -q 'one commit, in every uses: line'; then echo "$$out" >&2; exit 1; fi
 	@# No workflow calls xoa-base yet: make says to add one first.

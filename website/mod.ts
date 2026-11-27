@@ -84,7 +84,7 @@ async function proseFailures(src: string, dest: string): Promise<string[]> {
 
 // This module's own commit, when the site imports it from GitHub (raw.githubusercontent.com/xoadev/xoa-base/<sha>/).
 const OWN_COMMIT = /\/xoadev\/xoa-base\/([0-9a-f]{40})\//.exec(import.meta.url)?.[1];
-const CALLED = /xoadev\/xoa-base\/\.github\/workflows\/[^@\s]+@([0-9a-f]{40})/g;
+const CALLED = /xoadev\/xoa-base\/\.github\/[^@\s]+@([0-9a-f]{40})/g;
 
 // The commit the site imports this from is the one its repository's workflows call, which Dependabot moves: a deno.json
 // left behind fails here, saying where to move it.

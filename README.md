@@ -16,9 +16,10 @@ A project names one commit of this repository and never edits what it takes from
 here, and the project moves to the new commit. Until this repository's first release that commit is
 one of `main`; from then on it is a release's.
 
-**The CI names the commit**, in the `uses:` lines of the workflows that call this repository's, with
-its version beside it, which Dependabot's `github-actions` ecosystem moves, with the same week's
-cooldown as everything else. For an image, `.github/workflows/image.yml`:
+**The CI names the commit**, in the `uses:` lines of the workflows that call this repository's
+workflows or actions, with its version beside it, which Dependabot's `github-actions` ecosystem
+moves, with the same week's cooldown as everything else. For an image,
+`.github/workflows/image.yml`:
 
 ```yaml
 name: image
@@ -43,7 +44,7 @@ areas it uses:
 ```make
 # xoadev/xoa-base at the commit the project's workflows call, which Dependabot moves: make reads it
 # from them, fetches it into .xoa-base/ when it is missing or at another commit, and git checks it.
-XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/workflows/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
+XOA_BASE := $(sort $(shell sed -n 's|.*xoadev/xoa-base/\.github/[^@]*@\([0-9a-f]\{40\}\).*|\1|p' .github/workflows/*.y*ml))
 $(if $(XOA_BASE),,$(error no workflow calls xoa-base yet: add the one its README shows first))
 $(if $(filter 1,$(words $(XOA_BASE))),,$(error the workflows call xoa-base at $(XOA_BASE): one commit, in every uses: line))
 include .xoa-base/$(XOA_BASE)/base.mk
