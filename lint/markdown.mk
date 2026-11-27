@@ -5,7 +5,7 @@
 include $(dir $(lastword $(MAKEFILE_LIST)))prettier.mk
 MD_FILES ?= '**/*.md'
 MD_OPTIONS := --prose-wrap always --print-width 100
-MARKDOWNLINT := deno run --quiet --allow-read --allow-env --allow-sys \
+MARKDOWNLINT := $(XOA_DENO_RUN) \
   $(shell sed -n 's/.*"\(npm:markdownlint-cli2@[^"]*\)".*/\1/p' $(XOA_LINT)deno.jsonc)
 
 .PHONY: md-lint md-format
