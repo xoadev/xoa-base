@@ -10,7 +10,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../lint/require.mk
 
 .PHONY: web web-check web-browser web-serve
 
-web: ## The site, built into $(WEB)/_site; the build runs the plugin's checks
+web: ## The site, built into its _site folder; the build runs the plugin's checks
 	$(call xoa-require,deno,2.0.0,https://docs.deno.com/runtime/getting_started/installation/)
 	@cd $(WEB) && deno task build
 
