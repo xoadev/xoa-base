@@ -42,7 +42,8 @@ jobs:
           tag=$(gh release list --limit 100 --json tagName,isDraft \
             --jq "[.[] | select(.isDraft and (.tagName | startswith(\"$PREFIX\")))][0].tagName // empty")
           if [[ -z "$tag" ]]; then
-            echo "::error title=No draft::no draft release with the prefix $PREFIX: nothing has changed since the last one" >&2
+            echo "::error title=No draft::no draft release with the prefix $PREFIX:" \
+              "nothing has changed since the last one" >&2
             exit 1
           fi
           gh release edit "$tag" --draft=false --latest

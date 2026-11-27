@@ -37,3 +37,14 @@ updates:
     commit-message:
       prefix: fix
       include: scope
+
+  # The linters lint/requirements.txt pins with their hashes, for .github/actions/linters.
+  - package-ecosystem: pip
+    directory: /lint
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: fix
+      include: scope

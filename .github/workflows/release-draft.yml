@@ -77,7 +77,8 @@ jobs:
           HAS_CHANGES: ${{ needs.version.outputs.has-changes }}
           CHANGELOG: ${{ needs.version.outputs.changelog }}
         run: |
-          if [[ "$HAS_CHANGES" == true && "$TAG" != "$PREFIX$VERSION" ]] || ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "$HAS_CHANGES" == true && "$TAG" != "$PREFIX$VERSION" ]] ||
+            ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error title=Version::convco said '$TAG' ($VERSION), not $PREFIX<X.Y.Z>" >&2
             exit 1
           fi

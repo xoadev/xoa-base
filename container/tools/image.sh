@@ -31,7 +31,7 @@ fail() {
 }
 
 is_secret_name() {
-  [[ "$1" != *_FILE ]] && grep -qE "$SECRET_NAME" <<< "${1^^}"
+  [[ "$1" != *_FILE ]] && grep -qE "$SECRET_NAME" <<<"${1^^}"
 }
 
 lint() {
@@ -124,7 +124,7 @@ AWK
 
 check_built() {
   local tag=$1 arch=$2 actual user name
-  read -r actual user <<< "$(docker image inspect --format '{{.Architecture}} {{.Config.User}}' "$tag")"
+  read -r actual user <<<"$(docker image inspect --format '{{.Architecture}} {{.Config.User}}' "$tag")"
   [[ "$actual" == "$arch" ]] || fail "$tag is $actual, not $arch: the Dockerfile copies or builds for the wrong platform"
   [[ -n "$user" && ! "$user" =~ ^(root|0)(:|$) ]] || fail "$tag runs as root: USER 65532:65532 or a :nonroot base"
   while IFS='=' read -r name _; do
@@ -143,15 +143,15 @@ check_stop() {
   sleep "$START_SECONDS"
   if [[ "$(docker inspect --format '{{.State.Running}}' "$id")" != true ]]; then
     docker logs "$id" >&2 || true
-    docker rm --force "$id" > /dev/null
+    docker rm --force "$id" >/dev/null
     fail "$tag: its default command exited within ${START_SECONDS} s, before it was asked to stop; IMAGE_STOP=0 for an image that is not a server"
   fi
-  docker stop --time "$STOP_SECONDS" "$id" > /dev/null
+  docker stop --time "$STOP_SECONDS" "$id" >/dev/null
   signal=$(docker inspect --format '{{.Config.StopSignal}}' "$id")
   signal=${signal:-SIGTERM}
   [[ "$signal" =~ ^[0-9]+$ ]] && number=$signal || number=$(kill -l "${signal#SIG}")
   code=$(docker inspect --format '{{.State.ExitCode}}' "$id")
-  docker rm "$id" > /dev/null
+  docker rm "$id" >/dev/null
   [[ "$code" == 0 || "$code" == $((128 + number)) ]] ||
     fail "$tag exited $code on docker stop, not 0 or $((128 + number)): it ignores $signal, so Docker killed it after ${STOP_SECONDS} s; handle the signal, or STOPSIGNAL the one it handles"
 }
@@ -164,7 +164,7 @@ check() {
     fail "set IMAGE_CHECK in the Makefile: a command that does inside \$IMAGE what a real request does, not only --version"
   # shellcheck disable=SC2086 # IMAGE_BUILD_ARGS is a list of flags
   docker buildx build --check --file "$IMAGE_DOCKERFILE" ${IMAGE_BUILD_ARGS:-} "$IMAGE_CONTEXT"
-  IFS=, read -ra each_platform <<< "$PLATFORMS"
+  IFS=, read -ra each_platform <<<"$PLATFORMS"
   for platform in "${each_platform[@]}"; do
     arch=${platform#linux/}
     tag="$IMAGE-$arch"
@@ -177,7 +177,7 @@ check() {
     IMAGE=$tag IMAGE_RUN="docker run --rm ${RUN_FLAGS[*]} --volume $volume:/data" DOCKER_DEFAULT_PLATFORM=$platform \
       bash -euo pipefail -c "$IMAGE_CHECK" || fail "IMAGE_CHECK failed in $tag"
     [[ "${IMAGE_STOP:-1}" != 1 ]] || DOCKER_DEFAULT_PLATFORM=$platform check_stop "$tag" "$volume"
-    docker volume rm "$volume" > /dev/null && volume=""
+    docker volume rm "$volume" >/dev/null && volume=""
     echo "image: $tag checked"
   done
 }

@@ -70,8 +70,11 @@ rather than under emulation: two jobs, one with `platforms: linux/arm64` and
 **`lint/`**: the project includes the linters it needs the same way
 (`include .xoa-base/$(XOA_BASE)/lint/markdown.mk`, and so on) and puts their targets in its `lint`.
 Each says in its first lines what it checks and how. The tools come with the machine, never with
-`make`: they belong in the images of XOA's runners and agent (by-fros/cloud), anywhere else they are
-installed by hand, and a `.mk` fails saying which one is missing or too old.
+`make`: they belong in the images of XOA's runners and agent (by-fros/cloud), a public repository's
+job on GitHub's runners installs them with `uses: xoadev/xoa-base/.github/actions/linters@<sha>`
+after `actions/setup-go`, anywhere else they are installed by hand, and a `.mk` fails saying which
+one is missing or too old. `editorconfig.mk` checks the project's own `.editorconfig`, which
+`shell.mk`'s shfmt also follows.
 
 **`website/`** is a Lume plugin the site imports by the same commit, and `website/web.mk` its
 targets, included like the others: how, and the format of the site's prose it reads, in
