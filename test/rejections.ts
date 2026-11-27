@@ -186,3 +186,23 @@ try {
 } finally {
   await Deno.remove(markdown);
 }
+// A library's stylesheet is out of Stylelint only while the site's .stylelintignore says so.
+const ignore = `${root}/.stylelintignore`;
+const ignored = await Deno.readTextFile(ignore);
+await Deno.remove(ignore);
+try {
+  const result = await new Deno.Command(Deno.execPath(), {
+    args: ["task", "build"],
+    cwd: root,
+    stdout: "piped",
+  }).output();
+  if (
+    result.success ||
+    !new TextDecoder().decode(result.stderr).includes("library.css")
+  ) {
+    throw new Error("a stylesheet out of .stylelintignore was not linted");
+  }
+  console.log("rejection: library stylesheet not ignored OK");
+} finally {
+  await Deno.writeTextFile(ignore, ignored);
+}

@@ -1,0 +1,2 @@
+/* A library's stylesheet as published, which the site's .stylelintignore leaves out: Stylelint would refuse it. */
+.library-tile::before {}
