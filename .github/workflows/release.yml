@@ -1,13 +1,31 @@
 # Publishes the draft that release-draft.yml keeps: its tag is made then, at the commit the draft names, and is never
-# rewritten. For a repository whose release is its source, as this one; one that builds binaries
-# or images publishes them in a workflow of its own. Run by hand in this repository, and called by a project by SHA
-# from a workflow_dispatch:
+# rewritten. Run by hand in this repository, and called by a project by SHA from a workflow_dispatch.
+#
+# A release alone is its tag and its notes, as this repository's. A release with an artifact names the project's make
+# target that builds it (`build`), which this runs at the draft's commit with VERSION=X.Y.Z and BUILD_NUMBER, after
+# its check is green, with a token that only reads. The target leaves in release/ what is published: every file there
+# goes on the release, but `release/image.tar`, an OCI archive pushed to ghcr.io/<owner>/<repository> as X.Y.Z, and
+# `release/notes.md`, added below the draft's notes. Only then, in a job that runs no project code, the draft is
+# checked to be still the one built, the files and the image are attested (signed keyless with cosign, in a private
+# repository, which has no attestations on XOA's plan: each file's bundle goes beside it), and the draft is
+# published. Unticked `publish`, it builds everything and publishes nothing, the files left as the run's artifact;
+# with no draft, it builds this commit as dev.
 #
 #   jobs:
-#     publish:
+#     release:
 #       permissions:
-#         contents: write
+#         contents: write # see the draft, its files, publishing it
+#         actions: read # read the check of the commit
+#         packages: write # the image, when there is one
+#         id-token: write # attest or sign, keyless
+#         attestations: write # store a public repository's attestations
 #       uses: xoadev/xoa-base/.github/workflows/release.yml@<sha> # vX.Y.Z
+#       with:
+#         build: release-files
+#         publish: ${{ inputs.publish }}
+#
+# What comes after publishing (a deploy, a store) is the project's own job, `needs: release`, which reads the
+# published `tag`, `version` and `sha` from this workflow's outputs.
 name: release
 
 on:
@@ -18,6 +36,48 @@ on:
         description: The tag's prefix of the draft to publish
         type: string
         default: v
+      build:
+        description: >-
+          The make target, with its own variables if any (`pack PACK=system`), that builds the artifact into
+          release/; empty for a release alone
+        type: string
+        default: ""
+      image:
+        description: The build leaves an OCI archive, release/image.tar, and needs QEMU and buildx for it
+        type: boolean
+        default: false
+      image-name:
+        description: Where the image is published (empty, ghcr.io/<owner>/<repository>), for one of several
+        type: string
+        default: ""
+      latest:
+        description: The release is the repository's latest, and its image takes the `latest` tag
+        type: boolean
+        default: true
+      publish:
+        description: Publish the draft once it is built (false, only build it)
+        type: boolean
+        default: true
+      check:
+        description: The workflow that must be green on the draft's commit before an artifact is built from it
+        type: string
+        default: check.yml
+      runs-on:
+        description: >-
+          The build's runner, as JSON. Empty: a private repository's own runners with Docker
+          (SELF_HOSTED_DOCKER_RUNNER, or else SELF_HOSTED_RUNNER), and GitHub's for anything else.
+        type: string
+        default: ""
+    outputs:
+      tag:
+        description: The tag published (empty when nothing was)
+        value: ${{ jobs.publish.outputs.tag }}
+      version:
+        description: Its version, X.Y.Z
+        value: ${{ jobs.publish.outputs.version }}
+      sha:
+        description: The commit it was built from
+        value: ${{ jobs.publish.outputs.sha }}
 
 permissions:
   contents: read
@@ -27,24 +87,245 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  # The draft: its tag, version and commit. Only gh, with a token that writes, because a draft is not visible to one
+  # that only reads.
+  what:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: write # publish the draft, which makes its tag
+      contents: write # see the draft
+    outputs:
+      tag: ${{ steps.draft.outputs.tag }}
+      version: ${{ steps.draft.outputs.version }}
+      sha: ${{ steps.draft.outputs.sha }}
     steps:
-      - name: Publish the draft
+      - name: The draft
+        id: draft
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PREFIX: ${{ inputs.tag-prefix || 'v' }}
+          PUBLISH: ${{ inputs.publish != false }}
         run: |
           tag=$(gh release list --limit 100 --json tagName,isDraft \
             --jq "[.[] | select(.isDraft and (.tagName | startswith(\"$PREFIX\")))][0].tagName // empty")
           if [[ -z "$tag" ]]; then
-            echo "::error title=No draft::no draft release with the prefix $PREFIX:" \
-              "nothing has changed since the last one" >&2
+            if [[ "$PUBLISH" == true ]]; then
+              echo "::error title=No draft::no draft release with the prefix $PREFIX:" \
+                "nothing has changed since the last one" >&2
+              exit 1
+            fi
+            printf 'tag=\nversion=dev\nsha=%s\n' "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo "what: no draft; building $GITHUB_SHA as dev"
+            exit 0
+          fi
+          sha=$(gh release view "$tag" --json targetCommitish --jq .targetCommitish)
+          version=${tag#"$PREFIX"}
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error title=Draft::the draft is '$tag' at '$sha', not $PREFIX<X.Y.Z> at a commit" >&2
             exit 1
           fi
-          gh release edit "$tag" --draft=false --latest
-          echo "published: $tag"
+          printf 'tag=%s\nversion=%s\nsha=%s\n' "$tag" "$version" "$sha" >> "$GITHUB_OUTPUT"
+          echo "what: $tag at $sha"
+
+  # The artifact, with a token that only reads: the project's make target at the draft's commit, after its check.
+  build:
+    needs: what
+    if: inputs.build != ''
+    runs-on: >-
+      ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on)
+        || (github.event.repository.private && (vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER)
+          && fromJSON(vars.SELF_HOSTED_DOCKER_RUNNER || vars.SELF_HOSTED_RUNNER) || 'ubuntu-latest') }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read # read the check of the commit
+    env:
+      SHA: ${{ needs.what.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.what.outputs.sha }}
+          persist-credentials: false
+
+      # The usual gate, read and not run again: the draft's commit is main's, and its check ran when it got there.
+      # Right after a merge it may still be running: then this waits.
+      - name: The check of this commit is green
+        if: inputs.publish && inputs.check != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECK: ${{ inputs.check }}
+        run: |
+          run=$(gh run list --workflow "$CHECK" --commit "$SHA" --event push --limit 1 \
+            --json databaseId --jq '.[0].databaseId // empty')
+          if [[ -z "$run" ]]; then
+            echo "::error title=No check::$CHECK never ran on $SHA; a release is only published from main" >&2
+            exit 1
+          fi
+          gh run watch "$run" --interval 30 --exit-status > /dev/null || {
+            echo "::error title=Check failed::$CHECK run $run is not green on $SHA" >&2
+            exit 1
+          }
+          echo "gate: $CHECK run $run is green on $SHA"
+
+      # Both platforms of an image under one tag: QEMU to start the other one, buildx to put both in one archive.
+      # Both images pinned by digest: they run privileged, and what they are must not change under a moving tag.
+      - if: inputs.image
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          image: tonistiigi/binfmt:qemu-v10.0.4@sha256:8f58e6214f4cc9dc83ce8f5acad1ece508eb6b20e696a8c1e9f274481982c541
+          platforms: arm64
+      - if: inputs.image
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: >-
+            image=moby/buildkit:v0.27.0@sha256:054d632d0d7e94b11cdc6048674773499a5170cf7d8ce0c326daaff6be43c8e0
+
+      - name: Build
+        env:
+          TARGET: ${{ inputs.build }}
+          VERSION: ${{ needs.what.outputs.version }}
+          IMAGE: ${{ inputs.image-name || format('ghcr.io/{0}', github.repository) }}
+        run: |
+          rm -rf release
+          read -ra target <<< "$TARGET"
+          make "${target[@]}" VERSION="$VERSION" BUILD_NUMBER="$GITHUB_RUN_NUMBER" RELEASE_IMAGE="${IMAGE,,}"
+          if [[ -z "$(ls -A release 2> /dev/null)" ]]; then
+            echo "::error title=Nothing built::make $TARGET left nothing in release/" >&2
+            exit 1
+          fi
+          ls -l release
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ needs.what.outputs.version }}-build${{ github.run_number }}
+          path: release/
+          retention-days: 14
+
+  # Only gh, skopeo and the attesting and signing tools, on what build made: no project code runs while the token can
+  # write. The files go on the draft first, and the draft is published last.
+  publish:
+    needs: [what, build]
+    # A release alone has no build: skipped is fine, failed is not.
+    if: >-
+      always() && inputs.publish != false && needs.what.result == 'success'
+      && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # the draft's files, and publishing it
+      packages: write # the image, when there is one
+      id-token: write # attest or sign, keyless
+      attestations: write # store a public repository's attestations
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.what.outputs.tag }}
+      SHA: ${{ needs.what.outputs.sha }}
+      VERSION: ${{ needs.what.outputs.version }}
+      LATEST: ${{ inputs.latest != false }}
+    outputs:
+      tag: ${{ steps.published.outputs.tag }}
+      version: ${{ steps.published.outputs.version }}
+      sha: ${{ steps.published.outputs.sha }}
+    steps:
+      # A draft moved since would publish files of another commit.
+      - name: The draft is still the one built
+        run: |
+          now=$(gh release view "$TAG" --json isDraft,targetCommitish --jq '"\(.isDraft) \(.targetCommitish)"')
+          if [[ "$now" != "true $SHA" ]]; then
+            echo "::error title=Draft moved::$TAG is now '$now', not a draft at $SHA; run this again" >&2
+            exit 1
+          fi
+
+      - if: inputs.build != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.what.outputs.version }}-build${{ github.run_number }}
+          path: release
+
+      # The image and the notes are not files of the release: out of release/, which then holds only what goes on it.
+      - name: What is published
+        id: files
+        run: |
+          mkdir -p release "$RUNNER_TEMP/extra"
+          for extra in image.tar notes.md; do
+            if [[ -f "release/$extra" ]]; then mv "release/$extra" "$RUNNER_TEMP/extra/"; fi
+          done
+          echo "any=$([[ -n "$(ls -A release)" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "image=$([[ -f "$RUNNER_TEMP/extra/image.tar" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Push the image
+        id: image
+        if: steps.files.outputs.image == 'true'
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ inputs.image-name }}
+        run: |
+          image=${IMAGE_NAME:-ghcr.io/${GITHUB_REPOSITORY,,}}
+          skopeo login ghcr.io -u "$GITHUB_ACTOR" --password-stdin <<< "$REGISTRY_TOKEN"
+          skopeo copy --all --quiet --digestfile "$RUNNER_TEMP/digest" \
+            "oci-archive:$RUNNER_TEMP/extra/image.tar" "docker://$image:$VERSION"
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$(cat "$RUNNER_TEMP/digest")" >> "$GITHUB_OUTPUT"
+          echo "pushed $image:$VERSION@$(cat "$RUNNER_TEMP/digest")"
+
+      - name: Attest the files (public repository)
+        if: steps.files.outputs.any == 'true' && !github.event.repository.private
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: release/*
+
+      - name: Attest the image (public repository)
+        if: steps.files.outputs.image == 'true' && !github.event.repository.private
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+
+      - name: Install cosign (private repository)
+        if: >-
+          github.event.repository.private && (steps.files.outputs.image == 'true' || steps.files.outputs.any == 'true')
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+        with:
+          cosign-release: v3.1.3
+
+      - name: Sign the image (private repository)
+        if: steps.files.outputs.image == 'true' && github.event.repository.private
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.image.outputs.name }}@${{ steps.image.outputs.digest }}
+        run: |
+          cosign login ghcr.io -u "$GITHUB_ACTOR" --password-stdin <<< "$REGISTRY_TOKEN"
+          cosign sign --yes --recursive "$IMAGE"
+
+      # A private repository's files are signed keyless too, each with its Sigstore bundle beside it on the release:
+      # `cosign verify-blob --bundle <file>.sigstore.json --certificate-identity-regexp ... <file>` checks it.
+      - name: Sign the files (private repository)
+        if: steps.files.outputs.any == 'true' && github.event.repository.private
+        run: |
+          for file in release/*; do
+            cosign sign-blob --yes --bundle "$file.sigstore.json" "$file" > /dev/null
+          done
+
+      # The draft says what went in; the build's notes say what was built, below it. `--clobber` only ever replaces a
+      # draft's files: a published release is refused above.
+      - name: The files on the draft, then publish it
+        id: published
+        run: |
+          if [[ -f "$RUNNER_TEMP/extra/notes.md" ]]; then
+            { gh release view "$TAG" --json body --jq .body; echo; cat "$RUNNER_TEMP/extra/notes.md"; } \
+              > "$RUNNER_TEMP/notes.md"
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+          if [[ -n "$(ls -A release)" ]]; then gh release upload "$TAG" release/* --clobber; fi
+          gh release edit "$TAG" --draft=false --latest="$LATEST"
+          printf 'tag=%s\nversion=%s\nsha=%s\n' "$TAG" "$VERSION" "$SHA" >> "$GITHUB_OUTPUT"
+          echo "published: $TAG at $SHA"
+
+      - name: The image is the latest
+        if: steps.files.outputs.image == 'true' && inputs.latest != false
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: skopeo copy --all --quiet --preserve-digests "docker://$IMAGE:$VERSION" "docker://$IMAGE:latest"
