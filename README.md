@@ -87,8 +87,11 @@ targets, included like the others: how, and the format of the site's prose it re
 **Releases** are this repository's own workflows too. `release-draft.yml` rewrites, on every push to
 `main`, the draft of the next version that convco reads in the Conventional Commits; `release.yml`,
 run by hand, publishes it and makes its tag. A project calls them the same way, the draft from a
-push to `main` and the publication from a `workflow_dispatch`, with `contents: write`; one that
-builds an image publishes it with `image-release.yml`, whose first lines show how to call it.
+push to `main` and the publication from a `workflow_dispatch`: a release alone, or one with an
+artifact, which `release.yml` builds with the project's make target and publishes with its files
+and image (its first lines show how). A project whose image is built with `container/image.mk`
+publishes it with `image-release.yml` instead. One that releases several things calls both with
+a `tag-prefix` each.
 
 **Runners**: the workflows run on GitHub's unless the calling repository is private and its
 organization (or the repository) sets the Actions variable `SELF_HOSTED_RUNNER` to its own runners'
