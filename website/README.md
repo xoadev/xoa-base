@@ -63,8 +63,8 @@ followed.
   a page, a section or a collection, is declared to
   `loadContent({ only: { "home.videos": ["es"] } })` and must exist in exactly those.
 - **Headings are read as Markdown reads them** (through Lume's markdown-it), so a `#` inside fenced
-  code is not a section. A page has several `#` headings by design: a project that runs markdownlint
-  over the site turns MD025 off for `_content/`.
+  code is not a section. A page has several `#` headings by design: xoa-base's `md-lint` turns MD025
+  off for `_content/` through `MD_OPTIONS` (`lint/markdown.mk` shows how).
 - **No HTML in Markdown**: the build fails on it. HTML for a case nothing else covers goes on its
   own line with `markdownlint-disable-line MD033` and its reason, which the check reads too.
 

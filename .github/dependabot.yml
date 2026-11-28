@@ -23,13 +23,11 @@ updates:
       prefix: chore
       include: scope
 
-  # The checks' dependencies and prettier, in website/deno.jsonc and lint/deno.jsonc: the code that names them in full
+  # The checks' dependencies, in website/deno.jsonc: the code that names them in full
   # follows, or website/deps_test.ts fails saying what to write. Lume (deno.land/x) is not Dependabot's, and is moved
   # by hand.
   - package-ecosystem: deno
-    directories:
-      - /website
-      - /lint
+    directory: /website
     schedule:
       interval: weekly
     cooldown:

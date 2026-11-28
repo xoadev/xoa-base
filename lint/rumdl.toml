@@ -1,0 +1,15 @@
+# From github.com/xoadev/xoa-base (lint/rumdl.toml): rumdl's rules for lint/markdown.mk. markdownlint's rules, every
+# one, and the prose wrapped at 100 columns (MD013, which `rumdl fmt` reflows), so a diff shows the sentence that
+# changed; a table, a heading or a code block is left as written, and so is a line whose excess is a code span,
+# which cannot be broken.
+[MD013]
+line-length = 100
+reflow = true
+code-blocks = false
+tables = false
+headings = false
+code-spans = false
+
+# A Makefile's recipes need their tabs.
+[MD010]
+ignore-code-languages = ["make", "makefile"]
