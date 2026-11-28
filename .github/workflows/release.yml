@@ -23,6 +23,9 @@
 #       with:
 #         build: release-files
 #         publish: ${{ inputs.publish }}
+#
+# What comes after publishing (a deploy, a store) is the project's own job, `needs: release`, which reads the
+# published `tag`, `version` and `sha` from this workflow's outputs.
 name: release
 
 on:
@@ -65,6 +68,16 @@ on:
           (SELF_HOSTED_DOCKER_RUNNER, or else SELF_HOSTED_RUNNER), and GitHub's for anything else.
         type: string
         default: ""
+    outputs:
+      tag:
+        description: The tag published (empty when nothing was)
+        value: ${{ jobs.publish.outputs.tag }}
+      version:
+        description: Its version, X.Y.Z
+        value: ${{ jobs.publish.outputs.version }}
+      sha:
+        description: The commit it was built from
+        value: ${{ jobs.publish.outputs.sha }}
 
 permissions:
   contents: read
@@ -211,7 +224,10 @@ jobs:
       SHA: ${{ needs.what.outputs.sha }}
       VERSION: ${{ needs.what.outputs.version }}
       LATEST: ${{ inputs.latest != false }}
-      ARTIFACT: ${{ inputs.build != '' }}
+    outputs:
+      tag: ${{ steps.published.outputs.tag }}
+      version: ${{ steps.published.outputs.version }}
+      sha: ${{ steps.published.outputs.sha }}
     steps:
       # A draft moved since would publish files of another commit.
       - name: The draft is still the one built
@@ -296,6 +312,7 @@ jobs:
       # The draft says what went in; the build's notes say what was built, below it. `--clobber` only ever replaces a
       # draft's files: a published release is refused above.
       - name: The files on the draft, then publish it
+        id: published
         run: |
           if [[ -f "$RUNNER_TEMP/extra/notes.md" ]]; then
             { gh release view "$TAG" --json body --jq .body; echo; cat "$RUNNER_TEMP/extra/notes.md"; } \
@@ -304,6 +321,7 @@ jobs:
           fi
           if [[ -n "$(ls -A release)" ]]; then gh release upload "$TAG" release/* --clobber; fi
           gh release edit "$TAG" --draft=false --latest="$LATEST"
+          printf 'tag=%s\nversion=%s\nsha=%s\n' "$TAG" "$VERSION" "$SHA" >> "$GITHUB_OUTPUT"
           echo "published: $TAG at $SHA"
 
       - name: The image is the latest
