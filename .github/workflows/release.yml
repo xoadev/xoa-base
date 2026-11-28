@@ -7,8 +7,9 @@
 # goes on the release, but `release/image.tar`, an OCI archive pushed to ghcr.io/<owner>/<repository> as X.Y.Z, and
 # `release/notes.md`, added below the draft's notes. Only then, in a job that runs no project code, the draft is
 # checked to be still the one built, the files and the image are attested (signed keyless with cosign, in a private
-# repository, which has no attestations on XOA's plan), and the draft is published. Unticked `publish`, it builds
-# everything and publishes nothing, the files left as the run's artifact; with no draft, it builds this commit as dev.
+# repository, which has no attestations on XOA's plan: each file's bundle goes beside it), and the draft is
+# published. Unticked `publish`, it builds everything and publishes nothing, the files left as the run's artifact;
+# with no draft, it builds this commit as dev.
 #
 #   jobs:
 #     release:
@@ -42,6 +43,10 @@ on:
         description: The build leaves an OCI archive, release/image.tar, and needs QEMU and buildx for it
         type: boolean
         default: false
+      image-name:
+        description: Where the image is published (empty, ghcr.io/<owner>/<repository>), for one of several
+        type: string
+        default: ""
       latest:
         description: The release is the repository's latest, and its image takes the `latest` tag
         type: boolean
@@ -167,7 +172,7 @@ jobs:
         env:
           TARGET: ${{ inputs.build }}
           VERSION: ${{ needs.what.outputs.version }}
-          IMAGE: ghcr.io/${{ github.repository }}
+          IMAGE: ${{ inputs.image-name || format('ghcr.io/{0}', github.repository) }}
         run: |
           rm -rf release
           read -ra target <<< "$TARGET"
@@ -239,8 +244,9 @@ jobs:
         if: steps.files.outputs.image == 'true'
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ inputs.image-name }}
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image=${IMAGE_NAME:-ghcr.io/${GITHUB_REPOSITORY,,}}
           skopeo login ghcr.io -u "$GITHUB_ACTOR" --password-stdin <<< "$REGISTRY_TOKEN"
           skopeo copy --all --quiet --digestfile "$RUNNER_TEMP/digest" \
             "oci-archive:$RUNNER_TEMP/extra/image.tar" "docker://$image:$VERSION"
@@ -263,7 +269,8 @@ jobs:
           push-to-registry: true
 
       - name: Install cosign (private repository)
-        if: steps.files.outputs.image == 'true' && github.event.repository.private
+        if: >-
+          github.event.repository.private && (steps.files.outputs.image == 'true' || steps.files.outputs.any == 'true')
         uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
         with:
           cosign-release: v3.1.3
@@ -276,6 +283,15 @@ jobs:
         run: |
           cosign login ghcr.io -u "$GITHUB_ACTOR" --password-stdin <<< "$REGISTRY_TOKEN"
           cosign sign --yes --recursive "$IMAGE"
+
+      # A private repository's files are signed keyless too, each with its Sigstore bundle beside it on the release:
+      # `cosign verify-blob --bundle <file>.sigstore.json --certificate-identity-regexp ... <file>` checks it.
+      - name: Sign the files (private repository)
+        if: steps.files.outputs.any == 'true' && github.event.repository.private
+        run: |
+          for file in release/*; do
+            cosign sign-blob --yes --bundle "$file.sigstore.json" "$file" > /dev/null
+          done
 
       # The draft says what went in; the build's notes say what was built, below it. `--clobber` only ever replaces a
       # draft's files: a published release is refused above.
