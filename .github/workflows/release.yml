@@ -33,7 +33,9 @@ on:
         type: string
         default: v
       build:
-        description: The make target that builds the artifact into release/; empty for a release alone
+        description: >-
+          The make target, with its own variables if any (`pack PACK=system`), that builds the artifact into
+          release/; empty for a release alone
         type: string
         default: ""
       image:
@@ -163,7 +165,8 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}
         run: |
           rm -rf release
-          make "$TARGET" VERSION="$VERSION" BUILD_NUMBER="$GITHUB_RUN_NUMBER" RELEASE_IMAGE="${IMAGE,,}"
+          read -ra target <<< "$TARGET"
+          make "${target[@]}" VERSION="$VERSION" BUILD_NUMBER="$GITHUB_RUN_NUMBER" RELEASE_IMAGE="${IMAGE,,}"
           if [[ -z "$(ls -A release 2> /dev/null)" ]]; then
             echo "::error title=Nothing built::make $TARGET left nothing in release/" >&2
             exit 1
