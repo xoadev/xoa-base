@@ -8,7 +8,7 @@
   // full, and deps_test.ts fails until they say the same versions as here.
   "imports": {
     "lume/": "https://deno.land/x/lume@v3.2.5/",
-    "@std/http": "jsr:@std/http@1.1.0",
+    "@std/http": "jsr:@std/http@1.1.4",
     "@std/jsonc": "jsr:@std/jsonc@1.0.3",
     "@axe-core/playwright": "npm:@axe-core/playwright@4.14.0",
     "html-validate": "npm:html-validate@11.16.1",
