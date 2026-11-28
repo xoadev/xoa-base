@@ -1,17 +1,20 @@
 # From github.com/xoadev/xoa-base (lint/markdown.mk): change it here. `make md-lint` checks the repository's Markdown,
-# MD_FILES (default: all of it but what .gitignore leaves out): its layout with prettier, wrapped at 100 columns so a
-# diff shows the sentence that changed, and markdownlint's rules (lint/markdownlint.jsonc); `make md-format` applies
-# the layout. Both run through Deno at lint/deno.jsonc's versions.
-include $(dir $(lastword $(MAKEFILE_LIST)))prettier.mk
-MD_FILES ?= '**/*.md'
-MD_OPTIONS := --prose-wrap always --print-width 100
-MARKDOWNLINT := $(XOA_DENO_RUN) \
-  $(shell sed -n 's/.*"\(npm:markdownlint-cli2@[^"]*\)".*/\1/p' $(XOA_LINT)deno.jsonc)
+# MD_FILES (default: the tracked *.md), with rumdl: markdownlint's rules, and the prose wrapped at 100 columns so a
+# diff shows the sentence that changed (lint/rumdl.toml); `make md-format` applies its fixes and the wrapping. A rule
+# the project turns off for some files goes in MD_OPTIONS, as rumdl's inline settings, with its reason above it:
+#   MD_OPTIONS := --config 'per-file-ignores = { "web/_content/**" = ["MD025"] }'
+# rumdl comes with the machine (lint/require.mk).
+include $(dir $(lastword $(MAKEFILE_LIST)))require.mk
+XOA_LINT := $(dir $(lastword $(MAKEFILE_LIST)))
+MD_FILES ?= $(shell git ls-files '*.md')
+MD_OPTIONS ?=
+RUMDL = rumdl $(1) --config $(XOA_LINT)rumdl.toml $(MD_OPTIONS)
 
 .PHONY: md-lint md-format
-md-lint: ## The Markdown's layout and markdownlint's rules
-	@$(PRETTIER) --check $(MD_OPTIONS) $(MD_FILES)
-	@$(MARKDOWNLINT) --config $(XOA_LINT)markdownlint.jsonc $(MD_FILES) '#**/node_modules' '#.xoa-base' '#build'
+md-lint: ## The Markdown's layout and markdownlint's rules, with rumdl
+	$(call xoa-require,rumdl,0.3.5,https://github.com/rvben/rumdl#installation)
+	@$(call RUMDL,check) $(MD_FILES)
 
-md-format: ## Apply the Markdown's layout
-	@$(PRETTIER_WRITE) --write $(MD_OPTIONS) $(MD_FILES)
+md-format: ## Apply rumdl's fixes and the Markdown's wrapping
+	$(call xoa-require,rumdl,0.3.5,https://github.com/rvben/rumdl#installation)
+	@$(call RUMDL,fmt) $(MD_FILES)

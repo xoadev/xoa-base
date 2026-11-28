@@ -3,7 +3,7 @@
 #
 #   - uses: xoadev/xoa-base/.github/actions/linters@<sha> # vX.Y.Z
 #
-# Go checks each module against go.sum's database, typos' archive is checked against its sha256, and pip installs
+# Go checks each module against go.sum's database, typos' and rumdl's archives against their sha256, and pip installs
 # lint/requirements.txt only with the hashes it lists. shellcheck is already on GitHub's runners. Each step adds to
 # GITHUB_PATH a folder of the runner's own, never a value from the event: zizmor's github-env is ignored there.
 name: XOA linters
@@ -12,22 +12,29 @@ description: Install the linters xoa-base's lint/*.mk need, at pinned versions
 runs:
   using: composite
   steps:
-    - name: actionlint, shfmt and editorconfig-checker
+    - name: actionlint, shfmt, editorconfig-checker and yamlfmt
       shell: bash
       run: | # zizmor: ignore[github-env]
         go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
         go install mvdan.cc/sh/v3/cmd/shfmt@v3.14.1
         go install github.com/editorconfig-checker/editorconfig-checker/v4/cmd/editorconfig-checker@v4.0.2
+        go install github.com/google/yamlfmt/cmd/yamlfmt@v0.21.0
         echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-    - name: typos
+    - name: typos and rumdl
       shell: bash
       run: | # zizmor: ignore[github-env]
+        mkdir -p "$RUNNER_TEMP/bin"
         curl -fsSL --proto '=https' -o "$RUNNER_TEMP/typos.tgz" \
           https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz
         sha256=3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93
         echo "$sha256  $RUNNER_TEMP/typos.tgz" | sha256sum -c --quiet
-        mkdir -p "$RUNNER_TEMP/bin" && tar -xzf "$RUNNER_TEMP/typos.tgz" -C "$RUNNER_TEMP/bin" ./typos
+        tar -xzf "$RUNNER_TEMP/typos.tgz" -C "$RUNNER_TEMP/bin" ./typos
+        curl -fsSL --proto '=https' -o "$RUNNER_TEMP/rumdl.tgz" \
+          https://github.com/rvben/rumdl/releases/download/v0.3.5/rumdl-v0.3.5-x86_64-unknown-linux-musl.tar.gz
+        sha256=47acba7706ff7a57aa38ecacde5953dacd411feca4d36e2d6c994b1a33253ec4
+        echo "$sha256  $RUNNER_TEMP/rumdl.tgz" | sha256sum -c --quiet
+        tar -xzf "$RUNNER_TEMP/rumdl.tgz" -C "$RUNNER_TEMP/bin" rumdl
         echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
     - name: yamllint and zizmor

@@ -1,0 +1,10 @@
+# From github.com/xoadev/xoa-base (lint/yamlfmt.yml): yamlfmt's layout for lint/yaml.mk, the one prettier wrote
+# before it: two spaces, the blank lines kept, and lists indented under their key. Trailing spaces are
+# editorconfig-checker's (its trim would also strip a block scalar's last newline).
+formatter:
+  type: basic
+  indent: 2
+  retain_line_breaks_single: true
+  include_document_start: false
+  scan_folded_as_literal: true
+  eof_newline: true
